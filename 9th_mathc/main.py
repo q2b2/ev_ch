@@ -31,10 +31,10 @@ class EVChargingMonitor(QMainWindow):
         # Set up the UI
         self.setupUI()
         
-        # Set up update timer (50ms update rate = 20 FPS)
+        # Set up update timer (100ms update rate = 10 FPS)
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_data)
-        self.timer.start(50)
+        self.timer.start(100)
         
         # Apply saved configurations
         self.apply_saved_layouts()

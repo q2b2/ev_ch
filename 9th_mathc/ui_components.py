@@ -204,17 +204,25 @@ class GraphWidget(DraggableWidget):
         self.plot_widget.setLabel('bottom', "Time", units='s')
         self.plot_widget.setYRange(-250, 250)
         
-        # Add plot lines for each phase
-        for i, phase_name in enumerate(['Vg,a', 'Vg,b', 'Vg,c']):
-            pen = pg.mkPen(color=self.colors[i], width=2)
-            line = self.plot_widget.plot([], [], pen=pen, name=phase_name)
-            self.lines.append(line)
+        # Clear any existing legend and lines
+        if hasattr(self.plot_widget, 'legend'):
+            self.plot_widget.legend.clear()
+        self.plot_widget.clear()
+        self.lines = []
         
-        # Add legend with better visibility
-        legend = self.plot_widget.addLegend(offset=(10, 10))  # Position in top-right
-        legend.setBrush(pg.mkBrush(255, 255, 255, 220))  # Semi-transparent white background
-        legend.setPen(pg.mkPen(0, 0, 0))  # Black border
-    
+        # Create a proper legend with background
+        legend = self.plot_widget.addLegend(offset=(5, 5))
+        legend.setBrush(pg.mkBrush(255, 255, 255, 230))
+        legend.setPen(pg.mkPen(100, 100, 100))
+        
+        # Add plot lines for each phase with explicit names
+        phase_names = ['Vg,a', 'Vg,b', 'Vg,c']
+        for i, name in enumerate(phase_names):
+            pen = pg.mkPen(color=self.colors[i], width=2)
+            # The key is to set the name parameter here
+            line = self.plot_widget.plot([], [], pen=pen, name=name)
+            self.lines.append(line)
+
     def setup_current_graph(self):
         """Configure widget for current graph"""
         self.title_label.setText("Grid Current")
@@ -223,17 +231,25 @@ class GraphWidget(DraggableWidget):
         self.plot_widget.setLabel('bottom', "Time", units='s')
         self.plot_widget.setYRange(-10, 10)
         
-        # Add plot lines for each phase
-        for i, phase_name in enumerate(['Ig,a', 'Ig,b', 'Ig,c']):
-            pen = pg.mkPen(color=self.colors[i], width=2)
-            line = self.plot_widget.plot([], [], pen=pen, name=phase_name)
-            self.lines.append(line)
+        # Clear any existing legend and lines
+        if hasattr(self.plot_widget, 'legend'):
+            self.plot_widget.legend.clear()
+        self.plot_widget.clear()
+        self.lines = []
         
-        # Add legend with better visibility
-        legend = self.plot_widget.addLegend(offset=(10, 10))
-        legend.setBrush(pg.mkBrush(255, 255, 255, 220))
-        legend.setPen(pg.mkPen(0, 0, 0))
-    
+        # Create a proper legend with background
+        legend = self.plot_widget.addLegend(offset=(5, 5))
+        legend.setBrush(pg.mkBrush(255, 255, 255, 230))
+        legend.setPen(pg.mkPen(100, 100, 100))
+        
+        # Add plot lines for each phase with explicit names
+        phase_names = ['Ig,a', 'Ig,b', 'Ig,c']
+        for i, name in enumerate(phase_names):
+            pen = pg.mkPen(color=self.colors[i], width=2)
+            # The key is to set the name parameter here
+            line = self.plot_widget.plot([], [], pen=pen, name=name)
+            self.lines.append(line)
+
     def setup_power_graph(self):
         """Configure widget for power graph"""
         self.title_label.setText("Power Distribution")
@@ -242,16 +258,24 @@ class GraphWidget(DraggableWidget):
         self.plot_widget.setLabel('bottom', "Time", units='s')
         self.plot_widget.setYRange(-5000, 3000)
         
-        # Add plot lines for each power source
-        for i, power_name in enumerate(['P_grid', 'P_pv', 'P_ev', 'P_battery']):
-            pen = pg.mkPen(color=self.colors[i], width=2)
-            line = self.plot_widget.plot([], [], pen=pen, name=power_name)
-            self.lines.append(line)
+        # Clear any existing legend and lines
+        if hasattr(self.plot_widget, 'legend'):
+            self.plot_widget.legend.clear()
+        self.plot_widget.clear()
+        self.lines = []
         
-        # Add legend with better visibility
-        legend = self.plot_widget.addLegend(offset=(10, 10))
-        legend.setBrush(pg.mkBrush(255, 255, 255, 220))
-        legend.setPen(pg.mkPen(0, 0, 0))
+        # Create a proper legend with background
+        legend = self.plot_widget.addLegend(offset=(5, 5))
+        legend.setBrush(pg.mkBrush(255, 255, 255, 230))
+        legend.setPen(pg.mkPen(100, 100, 100))
+        
+        # Add plot lines for each power source with explicit names
+        power_names = ['P_grid', 'P_pv', 'P_ev', 'P_battery']
+        for i, name in enumerate(power_names):
+            pen = pg.mkPen(color=self.colors[i], width=2)
+            # The key is to set the name parameter here
+            line = self.plot_widget.plot([], [], pen=pen, name=name)
+            self.lines.append(line)
     
     def update_voltage_data(self, time_data, va_data, vb_data, vc_data):
         """Update the voltage graph with new data"""
@@ -286,26 +310,39 @@ class GaugeWidget(DraggableWidget):
         self.value = min_value
         self.units = units
         
-        # Create layout
+        # Remove frame border for gauges
+        self.setFrameStyle(QFrame.NoFrame)
+        
+        # Smaller minimum size for gauges
+        self.setMinimumSize(120, 120)
+        
+        # Create layout with reduced spacing
         layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)  # Remove margins
+        layout.setSpacing(2)  # Reduce spacing between elements
         self.setLayout(layout)
         
         # Add title label
         self.title_label = QLabel(title)
         self.title_label.setAlignment(Qt.AlignCenter)
-        self.title_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        self.title_label.setStyleSheet("font-weight: bold; font-size: 12px;")
         layout.addWidget(self.title_label)
         
         # Value label will be updated with the current value
         self.value_label = QLabel(f"{self.value:.2f} {self.units}")
         self.value_label.setAlignment(Qt.AlignCenter)
-        self.value_label.setStyleSheet("font-size: 16px; color: blue;")
+        self.value_label.setStyleSheet("font-size: 14px; color: blue;")
         layout.addWidget(self.value_label)
         
         # The gauge will be drawn on the paintEvent
         self.gauge_area = QWidget()
-        self.gauge_area.setMinimumSize(150, 150)
+        self.gauge_area.setMinimumSize(100, 100)
         layout.addWidget(self.gauge_area)
+        
+        # Give more space to the gauge area
+        layout.setStretchFactor(self.gauge_area, 3)
+        layout.setStretchFactor(self.title_label, 1)
+        layout.setStretchFactor(self.value_label, 1)
         
         # Colors for gauge
         self.background_color = QColor(240, 240, 240)
@@ -331,20 +368,20 @@ class GaugeWidget(DraggableWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         
-        # Draw background
-        painter.fillRect(gauge_rect, self.background_color)
+        # Draw background (make transparent)
+        # painter.fillRect(gauge_rect, self.background_color)
         
-        # Calculate center and radius
+        # Calculate center and radius - adjusted for compact display
         center_x = gauge_rect.x() + gauge_rect.width() / 2
-        center_y = gauge_rect.y() + gauge_rect.height() - 20
-        radius = min(gauge_rect.width(), gauge_rect.height() * 2) / 2 - 10
+        center_y = gauge_rect.y() + gauge_rect.height() - 10  # Moved up a bit
+        radius = min(gauge_rect.width(), gauge_rect.height() * 2) / 2 - 5
         
         # Draw arc (270 degrees, from -225 to 45 degrees)
         start_angle = -225 * 16  # QPainter uses 1/16 degrees
         span_angle = 270 * 16
         
         # Draw background arc
-        pen = QPen(self.arc_color, 10)
+        pen = QPen(self.arc_color, 8)
         painter.setPen(pen)
         painter.drawArc(int(center_x - radius), int(center_y - radius), 
                         int(radius * 2), int(radius * 2), start_angle, span_angle)
@@ -369,18 +406,18 @@ class GaugeWidget(DraggableWidget):
         
         # Draw center circle
         painter.setBrush(QBrush(self.pointer_color))
-        painter.drawEllipse(int(center_x - 5), int(center_y - 5), 10, 10)
+        painter.drawEllipse(int(center_x - 4), int(center_y - 4), 8, 8)
         
         # Draw min and max labels
         painter.setPen(self.text_color)
         font = painter.font()
-        font.setPointSize(8)
+        font.setPointSize(7)  # Smaller font for more compact display
         painter.setFont(font)
         
         # Min value text
         min_x = center_x + radius * 0.9 * np.cos(np.radians(-225))
         min_y = center_y + radius * 0.9 * np.sin(np.radians(-225))
-        painter.drawText(int(min_x - 20), int(min_y + 10), 
+        painter.drawText(int(min_x - 15), int(min_y + 8), 
                          f"{self.min_value}")
         
         # Max value text
@@ -390,7 +427,7 @@ class GaugeWidget(DraggableWidget):
                          f"{self.max_value}")
         
         # Draw ticks
-        pen = QPen(self.text_color, 2)
+        pen = QPen(self.text_color, 1)  # Thinner ticks
         painter.setPen(pen)
         
         # Draw major ticks and labels
@@ -400,8 +437,8 @@ class GaugeWidget(DraggableWidget):
             tick_radians = np.radians(tick_angle)
             
             # Draw longer tick
-            inner_x = center_x + (radius - 10) * np.cos(tick_radians)
-            inner_y = center_y + (radius - 10) * np.sin(tick_radians)
+            inner_x = center_x + (radius - 8) * np.cos(tick_radians)
+            inner_y = center_y + (radius - 8) * np.sin(tick_radians)
             outer_x = center_x + radius * np.cos(tick_radians)
             outer_y = center_y + radius * np.sin(tick_radians)
             
@@ -409,11 +446,11 @@ class GaugeWidget(DraggableWidget):
             
             # Draw tick label
             tick_value = self.min_value + i * (self.max_value - self.min_value) / num_major_ticks
-            label_x = center_x + (radius - 25) * np.cos(tick_radians)
-            label_y = center_y + (radius - 25) * np.sin(tick_radians)
+            label_x = center_x + (radius - 20) * np.cos(tick_radians)
+            label_y = center_y + (radius - 20) * np.sin(tick_radians)
             
             if i > 0 and i < num_major_ticks:  # Skip min and max as we already drew them
-                painter.drawText(int(label_x - 10), int(label_y + 5), f"{tick_value:.1f}")
+                painter.drawText(int(label_x - 8), int(label_y + 4), f"{tick_value:.1f}")
 
 
 class TableWidget(DraggableWidget):

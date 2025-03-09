@@ -44,12 +44,12 @@ class DataSimulator:
                 self.active_power = self.apparent_power * self.power_factor
                 self.reactive_power = np.sqrt(self.apparent_power**2 - self.active_power**2)
         
-    def get_time_data(self, n_points=100):
+    def get_time_data(self, n_points=8):
         """Generate time data for x-axis"""
         current_time = time.time() - self.time_start
-        return np.linspace(current_time - 5, current_time, n_points)
+        return np.linspace(current_time - 8, current_time, n_points)  # 8 seconds of history
     
-    def get_voltage_data(self, n_points=100):
+    def get_voltage_data(self, n_points=8):
         """Generate three-phase voltage data"""
         t = self.get_time_data(n_points)
         amplitude = self.vg_rms * np.sqrt(2)  # Peak voltage from RMS
@@ -65,7 +65,7 @@ class DataSimulator:
         
         return t, va, vb, vc
     
-    def get_current_data(self, n_points=100):
+    def get_current_data(self, n_points=8):
         """Generate three-phase current data"""
         t = self.get_time_data(n_points)
         amplitude = self.ig_rms * np.sqrt(2)  # Peak current from RMS
@@ -84,7 +84,7 @@ class DataSimulator:
         
         return t, ia, ib, ic
     
-    def get_power_data(self, n_points=100):
+    def get_power_data(self, n_points=8):
         """Generate power data for PV, EV, Grid, and Battery"""
         t = self.get_time_data(n_points)
         

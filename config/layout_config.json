@@ -61,62 +61,62 @@
     },
     "frequency_gauge": {
         "pos": {
-            "x": 1066,
-            "y": 499
+            "x": 879,
+            "y": 510
         },
         "size": {
-            "width": 200,
-            "height": 200
+            "width": 165,
+            "height": 132
         }
     },
     "voltage_gauge": {
         "pos": {
-            "x": 1227,
-            "y": 293
+            "x": 1253,
+            "y": 510
         },
         "size": {
-            "width": 200,
-            "height": 200
+            "width": 165,
+            "height": 132
         }
     },
     "thd_gauge": {
         "pos": {
-            "x": 856,
-            "y": 278
+            "x": 1065,
+            "y": 353
         },
         "size": {
-            "width": 200,
-            "height": 200
+            "width": 165,
+            "height": 132
         }
     },
     "active_power_gauge": {
         "pos": {
-            "x": 1036,
-            "y": 268
+            "x": 1253,
+            "y": 351
         },
         "size": {
-            "width": 200,
-            "height": 210
+            "width": 165,
+            "height": 132
         }
     },
     "reactive_power_gauge": {
         "pos": {
-            "x": 1245,
-            "y": 466
+            "x": 1066,
+            "y": 511
         },
         "size": {
-            "width": 200,
-            "height": 200
+            "width": 165,
+            "height": 132
         }
     },
     "current_gauge": {
         "pos": {
-            "x": 866,
-            "y": 500
+            "x": 882,
+            "y": 353
         },
         "size": {
-            "width": 200,
-            "height": 200
+            "width": 165,
+            "height": 132
         }
     },
     "control_buttons": {
