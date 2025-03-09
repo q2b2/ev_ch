@@ -35,19 +35,11 @@ class DraggableWidget(QFrame):  # Changed from QWidget to QFrame
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.LeftButton and self.drag_position:
             self.move(event.globalPos() - self.drag_position)
+            # Notify parent of movement
+            if hasattr(self.parent(), "widget_moved"):
+                self.parent().widget_moved()
             event.accept()
-        # Notify parent of movement
-        if hasattr(self.parent(), "widget_moved"):
-            self.parent().widget_moved()
-        event.accept()
     
-    def resizeEvent(self, event):
-        """Called when widget is resized"""
-    super().resizeEvent(event)
-    # Notify parent of resize
-    if hasattr(self.parent(), "widget_moved"):
-        self.parent().widget_moved()
-
     def mouseReleaseEvent(self, event):
         self.drag_position = None
 
@@ -496,6 +488,7 @@ class TableWidget(DraggableWidget):
         
         # Emit signal with table type and values
         self.save_clicked.emit(self.table_type, input_values)
+
 
 class ButtonWidget(DraggableWidget):
     """Widget for displaying and managing control buttons"""
