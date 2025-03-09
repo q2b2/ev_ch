@@ -1,0 +1,132 @@
+{
+    "voltage_graph": {
+        "pos": {
+            "x": 22,
+            "y": 287
+        },
+        "size": {
+            "width": 837,
+            "height": 358
+        }
+    },
+    "current_graph": {
+        "pos": {
+            "x": 18,
+            "y": 657
+        },
+        "size": {
+            "width": 1032,
+            "height": 324
+        }
+    },
+    "power_graph": {
+        "pos": {
+            "x": 1062,
+            "y": 659
+        },
+        "size": {
+            "width": 859,
+            "height": 321
+        }
+    },
+    "charging_table": {
+        "pos": {
+            "x": 28,
+            "y": 10
+        },
+        "size": {
+            "width": 454,
+            "height": 278
+        }
+    },
+    "ev_charging_table": {
+        "pos": {
+            "x": 1504,
+            "y": 350
+        },
+        "size": {
+            "width": 404,
+            "height": 281
+        }
+    },
+    "grid_settings_table": {
+        "pos": {
+            "x": 1382,
+            "y": 1
+        },
+        "size": {
+            "width": 531,
+            "height": 325
+        }
+    },
+    "frequency_gauge": {
+        "pos": {
+            "x": 1066,
+            "y": 499
+        },
+        "size": {
+            "width": 200,
+            "height": 200
+        }
+    },
+    "voltage_gauge": {
+        "pos": {
+            "x": 1227,
+            "y": 293
+        },
+        "size": {
+            "width": 200,
+            "height": 200
+        }
+    },
+    "thd_gauge": {
+        "pos": {
+            "x": 856,
+            "y": 278
+        },
+        "size": {
+            "width": 200,
+            "height": 200
+        }
+    },
+    "active_power_gauge": {
+        "pos": {
+            "x": 1036,
+            "y": 268
+        },
+        "size": {
+            "width": 200,
+            "height": 210
+        }
+    },
+    "reactive_power_gauge": {
+        "pos": {
+            "x": 1245,
+            "y": 466
+        },
+        "size": {
+            "width": 200,
+            "height": 200
+        }
+    },
+    "current_gauge": {
+        "pos": {
+            "x": 866,
+            "y": 500
+        },
+        "size": {
+            "width": 200,
+            "height": 200
+        }
+    },
+    "control_buttons": {
+        "pos": {
+            "x": 477,
+            "y": 93
+        },
+        "size": {
+            "width": 200,
+            "height": 200
+        }
+    }
+}

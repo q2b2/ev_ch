@@ -10,8 +10,8 @@ import pyqtgraph as pg
 import numpy as np
 from PyQt5.QtGui import QColor, QPainter, QPen, QBrush, QFont
 
-class DraggableWidget(QFrame):  # Changed from QWidget to QFrame
-    """Base class for all draggable widgets"""
+class DraggableWidget(QFrame):
+    """Base class for all draggable and resizable widgets"""
     
     def __init__(self, parent=None, widget_id=None):
         super().__init__(parent)
@@ -26,29 +26,147 @@ class DraggableWidget(QFrame):  # Changed from QWidget to QFrame
         # QSizePolicy to make widget resizable
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setMinimumSize(200, 200)
+        
+        # Resize parameters
+        self.resize_border_width = 10     # Border width for resizing detection
+        self.resizing = False             # Flag for resizing mode
+        self.resize_edge = None           # Which edge is being resized
+        self.start_geometry = None        # Starting geometry for resize operations
     
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.drag_position = event.globalPos() - self.frameGeometry().topLeft()
+            # Check if we're on an edge for resizing
+            edge = self._get_resize_edge(event.pos())
+            if edge:
+                self.resizing = True
+                self.resize_edge = edge
+                self.start_geometry = self.geometry()
+                self.setCursor(self._get_cursor_for_edge(edge))
+            else:
+                # Regular drag operation
+                self.drag_position = event.globalPos() - self.frameGeometry().topLeft()
             event.accept()
     
     def mouseMoveEvent(self, event):
-        if event.buttons() == Qt.LeftButton and self.drag_position:
-            self.move(event.globalPos() - self.drag_position)
-            # Notify parent of movement
+        if not self.resizing:
+            # Check if mouse is near border and set appropriate cursor
+            edge = self._get_resize_edge(event.pos())
+            if edge:
+                self.setCursor(self._get_cursor_for_edge(edge))
+            else:
+                self.setCursor(Qt.ArrowCursor)
+            
+            # Handle dragging
+            if event.buttons() == Qt.LeftButton and self.drag_position:
+                self.move(event.globalPos() - self.drag_position)
+                # Notify parent of movement
+                if hasattr(self.parent(), "widget_moved"):
+                    self.parent().widget_moved()
+                event.accept()
+        else:
+            # Handle resizing
+            self._handle_resize(event.globalPos())
+            # Notify parent of resize
             if hasattr(self.parent(), "widget_moved"):
                 self.parent().widget_moved()
             event.accept()
-
-    def resizeEvent(self, event):
-        """Called when widget is resized"""
-        super().resizeEvent(event)
-        # Notify parent of resize
-        if hasattr(self.parent(), "widget_moved"):
-            self.parent().widget_moved()
     
     def mouseReleaseEvent(self, event):
         self.drag_position = None
+        self.resizing = False
+        self.resize_edge = None
+        self.start_geometry = None
+        # Reset cursor
+        self.setCursor(Qt.ArrowCursor)
+    
+    def _get_resize_edge(self, pos):
+        """Determine if the position is on an edge for resizing"""
+        x, y = pos.x(), pos.y()
+        w, h = self.width(), self.height()
+        border = self.resize_border_width
+        
+        # Check corners first (they take priority)
+        if x < border and y < border:
+            return "top-left"
+        elif x > w - border and y < border:
+            return "top-right"
+        elif x < border and y > h - border:
+            return "bottom-left"
+        elif x > w - border and y > h - border:
+            return "bottom-right"
+        
+        # Then check edges
+        elif x < border:
+            return "left"
+        elif x > w - border:
+            return "right"
+        elif y < border:
+            return "top"
+        elif y > h - border:
+            return "bottom"
+        
+        return None
+    
+    def _get_cursor_for_edge(self, edge):
+        """Return the appropriate cursor for the given edge"""
+        if edge in ["top-left", "bottom-right"]:
+            return Qt.SizeFDiagCursor
+        elif edge in ["top-right", "bottom-left"]:
+            return Qt.SizeBDiagCursor
+        elif edge in ["left", "right"]:
+            return Qt.SizeHorCursor
+        elif edge in ["top", "bottom"]:
+            return Qt.SizeVerCursor
+        return Qt.ArrowCursor
+    
+    def _handle_resize(self, global_pos):
+        """Handle resize operation based on the active edge"""
+        if not self.resize_edge or not self.start_geometry:
+            return
+        
+        # Convert global position to parent coordinates
+        parent_pos = self.parent().mapFromGlobal(global_pos)
+        
+        # Get original geometry
+        orig = self.start_geometry
+        new_geom = orig  # Start with original
+        min_width = self.minimumWidth()
+        min_height = self.minimumHeight()
+        
+        # Calculate new geometry based on edge being dragged
+        if "left" in self.resize_edge:
+            # Left edge moving - adjust x position and width
+            dx = parent_pos.x() - orig.x()
+            new_width = max(min_width, orig.width() - dx)
+            if new_width == min_width:
+                dx = orig.width() - min_width
+            new_geom.setX(orig.x() + dx)
+            new_geom.setWidth(orig.width() - dx)
+        
+        if "right" in self.resize_edge:
+            # Right edge moving - adjust width
+            new_width = max(min_width, parent_pos.x() - orig.x())
+            new_geom.setWidth(new_width)
+        
+        if "top" in self.resize_edge:
+            # Top edge moving - adjust y position and height
+            dy = parent_pos.y() - orig.y()
+            new_height = max(min_height, orig.height() - dy)
+            if new_height == min_height:
+                dy = orig.height() - min_height
+            new_geom.setY(orig.y() + dy)
+            new_geom.setHeight(orig.height() - dy)
+        
+        if "bottom" in self.resize_edge:
+            # Bottom edge moving - adjust height
+            new_height = max(min_height, parent_pos.y() - orig.y())
+            new_geom.setHeight(new_height)
+        
+        # Apply new geometry
+        self.setGeometry(new_geom)
+        
+        # Force update of the widget contents
+        self.update()
 
 
 class GraphWidget(DraggableWidget):
@@ -92,8 +210,10 @@ class GraphWidget(DraggableWidget):
             line = self.plot_widget.plot([], [], pen=pen, name=phase_name)
             self.lines.append(line)
         
-        # Add legend
-        self.plot_widget.addLegend()
+        # Add legend with better visibility
+        legend = self.plot_widget.addLegend(offset=(10, 10))  # Position in top-right
+        legend.setBrush(pg.mkBrush(255, 255, 255, 220))  # Semi-transparent white background
+        legend.setPen(pg.mkPen(0, 0, 0))  # Black border
     
     def setup_current_graph(self):
         """Configure widget for current graph"""
@@ -109,8 +229,10 @@ class GraphWidget(DraggableWidget):
             line = self.plot_widget.plot([], [], pen=pen, name=phase_name)
             self.lines.append(line)
         
-        # Add legend
-        self.plot_widget.addLegend()
+        # Add legend with better visibility
+        legend = self.plot_widget.addLegend(offset=(10, 10))
+        legend.setBrush(pg.mkBrush(255, 255, 255, 220))
+        legend.setPen(pg.mkPen(0, 0, 0))
     
     def setup_power_graph(self):
         """Configure widget for power graph"""
@@ -126,8 +248,10 @@ class GraphWidget(DraggableWidget):
             line = self.plot_widget.plot([], [], pen=pen, name=power_name)
             self.lines.append(line)
         
-        # Add legend
-        self.plot_widget.addLegend()
+        # Add legend with better visibility
+        legend = self.plot_widget.addLegend(offset=(10, 10))
+        legend.setBrush(pg.mkBrush(255, 255, 255, 220))
+        legend.setPen(pg.mkPen(0, 0, 0))
     
     def update_voltage_data(self, time_data, va_data, vb_data, vc_data):
         """Update the voltage graph with new data"""

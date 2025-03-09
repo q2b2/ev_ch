@@ -52,8 +52,8 @@ class EVChargingMonitor(QMainWindow):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         
-        # Use no layout to allow absolute positioning
-        self.central_widget.setLayout(None)
+        # Don't set any layout - we're using absolute positioning
+        # (Removing the line that was causing the error)
         
         # Create all UI elements - everything directly on the central widget
         self.setup_graphs()
@@ -245,15 +245,14 @@ class EVChargingMonitor(QMainWindow):
                 self.config_manager.apply_config_to_widget(widget, widget_id, configs)
     
     def closeEvent(self, event):
-        """Handle window close event - save layout"""
+        """Handle window close event - don't save layout"""
         # Stop logging if active
         if self.data_logger.is_logging:
             self.data_logger.stop_logging()
         
-        # Always save layout configuration on close
-        self.save_layout()
+        # Don't automatically save layout on close
+        # (Removed the save_layout() call that was here)
         
-        # Accept the close event
         event.accept()
 
 if __name__ == "__main__":
