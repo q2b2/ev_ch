@@ -39,6 +39,13 @@ class DraggableWidget(QFrame):  # Changed from QWidget to QFrame
             if hasattr(self.parent(), "widget_moved"):
                 self.parent().widget_moved()
             event.accept()
+
+    def resizeEvent(self, event):
+        """Called when widget is resized"""
+        super().resizeEvent(event)
+        # Notify parent of resize
+        if hasattr(self.parent(), "widget_moved"):
+            self.parent().widget_moved()
     
     def mouseReleaseEvent(self, event):
         self.drag_position = None
