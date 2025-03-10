@@ -61,11 +61,15 @@ class DataSimulator:
         
         # Initialize UDP client for real-time data if needed
         if self.use_real_data:
+            print("Initializing UDP client for real data...")
             self.udp_client = UDPClient(ip=udp_ip, port=udp_port)
             success = self.udp_client.start()
             if not success:
                 print("Failed to start UDP client. Falling back to simulated data.")
                 self.use_real_data = False
+                self.udp_client = None
+            else:
+                print("UDP client started successfully.")
     
     def get_time_data(self, n_points=100):
         """
@@ -195,27 +199,27 @@ class DataSimulator:
         dict
             Dictionary containing data for all tables.
         """
-        if self.use_real_data and self.udp_client:
+        if self.use_real_data and self.udp_client and self.udp_client.is_connected():
             # Get latest data from UDP client
             latest_data = self.udp_client.get_latest_data()
             
             # Map UDP data to table data
             table_data = {
                 "charging_setting": {
-                    "PV power": latest_data.get('PhotoVoltaic_Power', self.pv_power),
-                    "EV power": latest_data.get('ElectricVehicle_Power', self.ev_power),
-                    "Battery power": self.battery_power,  # May need to be calculated
-                    "V_dc": latest_data.get('DCLink_Voltage', self.v_dc)
+                    "PV power": latest_data['PhotoVoltaic_Power'],
+                    "EV power": latest_data['ElectricVehicle_Power'],
+                    "Battery power": latest_data['Battery_Power'],
+                    "V_dc": latest_data['DCLink_Voltage']
                 },
                 "ev_charging_setting": {
-                    "EV voltage": latest_data.get('ElectricVehicle_Voltage', self.ev_voltage),
+                    "EV voltage": latest_data['ElectricVehicle_Voltage'],
                     "EV SoC": self.ev_soc,  # This might not come from UDP
                     "Demand Response": self.demand_response,
                     "V2G": self.v2g
                 },
                 "grid_settings": {
-                    "Vg_rms": latest_data.get('Grid_Voltage', self.vg_rms),
-                    "Ig_rms": latest_data.get('Grid_Current', self.ig_rms),
+                    "Vg_rms": latest_data['Grid_Voltage'],
+                    "Ig_rms": latest_data['Grid_Current'],
                     "Frequency": self.frequency,
                     "THD": self.thd,
                     "Power factor": self.power_factor
@@ -256,18 +260,28 @@ class DataSimulator:
         dict
             Dictionary containing data for all gauges.
         """
-        if self.use_real_data and self.udp_client:
+        if self.use_real_data and self.udp_client and self.udp_client.is_connected():
             # Get latest data from UDP client
             latest_data = self.udp_client.get_latest_data()
             
+            # Calculate apparent power and power factor
+            grid_voltage = latest_data['Grid_Voltage']
+            grid_current = latest_data['Grid_Current']
+            active_power = grid_voltage * grid_current  # Simplified P = V*I
+            
+            # Assume a typical power factor
+            power_factor = 0.95
+            apparent_power = active_power / power_factor
+            reactive_power = np.sqrt(apparent_power**2 - active_power**2)
+            
             # Return gauge data based on UDP data
             return {
-                "frequency": self.frequency,  # This might be calculated or set separately
-                "voltage_rms": latest_data.get('Grid_Voltage', self.vg_rms),
-                "current_rms": latest_data.get('Grid_Current', self.ig_rms),
+                "frequency": self.frequency,  # Typically constant
+                "voltage_rms": grid_voltage,
+                "current_rms": grid_current,
                 "thd": self.thd,
-                "active_power": latest_data.get('Grid_Voltage', self.vg_rms) * latest_data.get('Grid_Current', self.ig_rms) * self.power_factor,
-                "reactive_power": latest_data.get('Grid_Voltage', self.vg_rms) * latest_data.get('Grid_Current', self.ig_rms) * np.sin(np.arccos(self.power_factor))
+                "active_power": active_power,
+                "reactive_power": reactive_power
             }
         else:
             # Return simulated gauge data
@@ -331,4 +345,5 @@ class DataSimulator:
         Perform any cleanup needed when the application is closing.
         """
         if self.use_real_data and self.udp_client:
+            print("Shutting down UDP client...")
             self.udp_client.stop()

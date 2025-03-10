@@ -5,7 +5,7 @@ import sys
 import time
 import numpy as np
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, 
-                            QVBoxLayout, QHBoxLayout, QPushButton)
+                            QVBoxLayout, QHBoxLayout, QPushButton, QLabel)
 from PyQt5.QtCore import QTimer, Qt
 
 import argparse
@@ -39,13 +39,25 @@ class EVChargingMonitor(QMainWindow):
         # Set up update timer (50ms update rate = 20 FPS)
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_data)
-        self.timer.start(50)
+        self.timer.start(100)
         
         # Apply saved configurations
         self.apply_saved_layouts()
         
         # Flag to track if layout has changed
         self.layout_changed = False
+        
+        # Add data source indicator
+        self.data_source_label = QLabel("Data Source: Simulated")
+        self.data_source_label.setStyleSheet("background-color: #F0F0F0; padding: 5px; border-radius: 3px;")
+        self.data_source_label.setGeometry(10, 10, 300, 30)
+        self.data_source_label.setParent(self.central_widget)
+        self.data_source_label.show()
+        
+        # Update data source indicator
+        if self.data_simulator.use_real_data:
+            self.data_source_label.setText("Data Source: UDP (Waiting for data...)")
+            self.data_source_label.setStyleSheet("background-color: #FFA500; color: white; padding: 5px; border-radius: 3px;")
     
     def setupUI(self):
         """Set up the main UI components"""
@@ -262,18 +274,18 @@ class EVChargingMonitor(QMainWindow):
         # Don't automatically save layout on close
         event.accept()
 
-    # Update the main block to add command line arguments:
-    if __name__ == "__main__":
-        # Parse command line arguments
-        parser = argparse.ArgumentParser(description='EV Charging Station Monitor')
-        parser.add_argument('--real-data', action='store_true', help='Use real data from UDP')
-        parser.add_argument('--udp-ip', type=str, default='0.0.0.0', help='UDP IP address')
-        parser.add_argument('--udp-port', type=int, default=5000, help='UDP port')
-        args = parser.parse_args()
-        
-        app = QApplication(sys.argv)
-        window = EVChargingMonitor(use_real_data=args.real_data, 
-                                udp_ip=args.udp_ip, 
-                                udp_port=args.udp_port)
-        window.show()
-        sys.exit(app.exec_())
+# Update the main block to add command line arguments:
+if __name__ == "__main__":
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='EV Charging Station Monitor')
+    parser.add_argument('--real-data', action='store_true', help='Use real data from UDP')
+    parser.add_argument('--udp-ip', type=str, default='0.0.0.0', help='UDP IP address')
+    parser.add_argument('--udp-port', type=int, default=5000, help='UDP port')
+    args = parser.parse_args()
+    
+    app = QApplication(sys.argv)
+    window = EVChargingMonitor(use_real_data=args.real_data, 
+                              udp_ip=args.udp_ip, 
+                              udp_port=args.udp_port)
+    window.show()
+    sys.exit(app.exec_())
