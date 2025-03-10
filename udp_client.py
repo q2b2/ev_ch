@@ -134,15 +134,16 @@ class UDPClient:
         print("UDP client stopped")
     
     def _receive_data(self):
-        """
-        Background thread method to continuously receive and process UDP packets.
-        """
+        """Background thread method to continuously receive and process UDP packets."""
         start_time = time.time()
         
         while self.is_running:
             try:
                 # Attempt to receive data (will timeout after 1 second if no data)
                 data, addr = self.socket.recvfrom(self.buffer_size)
+                
+                # Add this debug print
+                print(f"UDP packet received! Size: {len(data)} bytes from {addr}")
                 
                 # Record the current time for this data point
                 current_time = time.time() - start_time

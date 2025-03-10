@@ -8,6 +8,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget,
                             QVBoxLayout, QHBoxLayout, QPushButton)
 from PyQt5.QtCore import QTimer, Qt
 
+import argparse
+
 # Import custom modules
 from data_simulator import DataSimulator
 from data_logger import DataLogger
@@ -17,11 +19,14 @@ from ui_components import GraphWidget, GaugeWidget, TableWidget, ButtonWidget
 class EVChargingMonitor(QMainWindow):
     """Main application window for EV Charging Station Monitor"""
     
-    def __init__(self):
+        # In the __init__ method of EVChargingMonitor class, update to use UDP client:
+    def __init__(self, use_real_data=False, udp_ip="0.0.0.0", udp_port=5000):
         super().__init__()
         
-        # Initialize components
-        self.data_simulator = DataSimulator()
+        # Initialize components with real data option
+        self.data_simulator = DataSimulator(use_real_data=use_real_data, 
+                                        udp_ip=udp_ip, 
+                                        udp_port=udp_port)
         self.data_logger = DataLogger()
         self.config_manager = ConfigManager()
         
@@ -31,10 +36,10 @@ class EVChargingMonitor(QMainWindow):
         # Set up the UI
         self.setupUI()
         
-        # Set up update timer (100ms update rate = 10 FPS)
+        # Set up update timer (50ms update rate = 20 FPS)
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_data)
-        self.timer.start(100)
+        self.timer.start(50)
         
         # Apply saved configurations
         self.apply_saved_layouts()
@@ -244,19 +249,31 @@ class EVChargingMonitor(QMainWindow):
             if widget_id in configs:
                 self.config_manager.apply_config_to_widget(widget, widget_id, configs)
     
+    # Add this to the closeEvent method to ensure clean shutdown:
     def closeEvent(self, event):
-        """Handle window close event - don't save layout"""
+        """Handle window close event"""
         # Stop logging if active
         if self.data_logger.is_logging:
             self.data_logger.stop_logging()
         
-        # Don't automatically save layout on close
-        # (Removed the save_layout() call that was here)
+        # Clean shutdown of data simulator
+        self.data_simulator.shutdown()
         
+        # Don't automatically save layout on close
         event.accept()
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = EVChargingMonitor()
-    window.show()
-    sys.exit(app.exec_())
+    # Update the main block to add command line arguments:
+    if __name__ == "__main__":
+        # Parse command line arguments
+        parser = argparse.ArgumentParser(description='EV Charging Station Monitor')
+        parser.add_argument('--real-data', action='store_true', help='Use real data from UDP')
+        parser.add_argument('--udp-ip', type=str, default='0.0.0.0', help='UDP IP address')
+        parser.add_argument('--udp-port', type=int, default=5000, help='UDP port')
+        args = parser.parse_args()
+        
+        app = QApplication(sys.argv)
+        window = EVChargingMonitor(use_real_data=args.real_data, 
+                                udp_ip=args.udp_ip, 
+                                udp_port=args.udp_port)
+        window.show()
+        sys.exit(app.exec_())
