@@ -71,7 +71,7 @@ class DataSimulator:
             else:
                 print("UDP client started successfully.")
     
-    def get_time_data(self, n_points=100):
+    def get_time_data(self, n_points=8):
         """
         Generate time data for x-axis.
         
@@ -86,9 +86,9 @@ class DataSimulator:
             Array of time values.
         """
         current_time = time.time() - self.time_start
-        return np.linspace(current_time - 5, current_time, n_points)
+        return np.linspace(current_time - 1, current_time, n_points)
     
-    def get_voltage_data(self, n_points=100):
+    def get_voltage_data(self, n_points=8):
         """
         Get three-phase voltage data.
         
@@ -123,7 +123,7 @@ class DataSimulator:
             
             return t, va, vb, vc
     
-    def get_current_data(self, n_points=100):
+    def get_current_data(self, n_points=8):
         """
         Get three-phase current data.
         
@@ -159,7 +159,7 @@ class DataSimulator:
             
             return t, ia, ib, ic
     
-    def get_power_data(self, n_points=100):
+    def get_power_data(self, n_points=8):
         """
         Get power data for grid, PV, EV, and battery.
         

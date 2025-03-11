@@ -5,7 +5,7 @@ import sys
 import time
 import numpy as np
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, 
-                            QVBoxLayout, QHBoxLayout, QPushButton, QLabel)
+                            QVBoxLayout, QHBoxLayout, QPushButton)
 from PyQt5.QtCore import QTimer, Qt
 
 import argparse
@@ -46,18 +46,6 @@ class EVChargingMonitor(QMainWindow):
         
         # Flag to track if layout has changed
         self.layout_changed = False
-        
-        # Add data source indicator
-        self.data_source_label = QLabel("Data Source: Simulated")
-        self.data_source_label.setStyleSheet("background-color: #F0F0F0; padding: 5px; border-radius: 3px;")
-        self.data_source_label.setGeometry(10, 10, 300, 30)
-        self.data_source_label.setParent(self.central_widget)
-        self.data_source_label.show()
-        
-        # Update data source indicator
-        if self.data_simulator.use_real_data:
-            self.data_source_label.setText("Data Source: UDP (Waiting for data...)")
-            self.data_source_label.setStyleSheet("background-color: #FFA500; color: white; padding: 5px; border-radius: 3px;")
     
     def setupUI(self):
         """Set up the main UI components"""
