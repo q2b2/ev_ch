@@ -146,7 +146,7 @@ class EVChargingMonitor(QMainWindow):
                 config["id"]
             )
             
-            gauge.setGeometry(x, y, 200, 200)
+            gauge.setGeometry(x, y, 100, 100)
             gauge.show()
             
             self.gauges.append(gauge)

@@ -332,7 +332,7 @@ class UDPClient:
         """
         return self.latest_data.copy()
     
-    def get_waveform_data(self, waveform_type, n_points=100):
+    def get_waveform_data(self, waveform_type, n_points=8):
         """
         Get waveform data for voltage or current.
         
@@ -362,7 +362,7 @@ class UDPClient:
         # Convert to numpy arrays (which is what the UI expects)
         return (np.array(time_data), np.array(phase_a), np.array(phase_b), np.array(phase_c))
     
-    def get_parameter_history(self, parameter, n_points=100):
+    def get_parameter_history(self, parameter, n_points=8):
         """
         Get historical data for a specific parameter.
         
@@ -387,7 +387,7 @@ class UDPClient:
         
         return np.array(time_data), np.array(param_data)
     
-    def get_power_data(self, n_points=100):
+    def get_power_data(self, n_points=8):
         """
         Get power data for grid, PV, EV, and battery.
         
