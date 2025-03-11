@@ -196,6 +196,8 @@ class GraphWidget(DraggableWidget):
         self.lines = []
         self.colors = [(255, 0, 0), (0, 0, 255), (0, 200, 0), (150, 150, 0)]
         
+# Update these methods in GraphWidget class in ui_components.py:
+
     def setup_voltage_graph(self):
         """Configure widget for voltage graph"""
         self.title_label.setText("Grid Voltage")
@@ -210,8 +212,9 @@ class GraphWidget(DraggableWidget):
         self.plot_widget.clear()
         self.lines = []
         
-        # Create a proper legend with background
+        # Create legend in top right corner
         legend = self.plot_widget.addLegend(offset=(5, 5))
+        legend.setPos(self.plot_widget.width()-120, 10)  # Position in top-right
         legend.setBrush(pg.mkBrush(255, 255, 255, 230))
         legend.setPen(pg.mkPen(100, 100, 100))
         
@@ -219,7 +222,6 @@ class GraphWidget(DraggableWidget):
         phase_names = ['Vg,a', 'Vg,b', 'Vg,c']
         for i, name in enumerate(phase_names):
             pen = pg.mkPen(color=self.colors[i], width=2)
-            # The key is to set the name parameter here
             line = self.plot_widget.plot([], [], pen=pen, name=name)
             self.lines.append(line)
 
@@ -354,6 +356,7 @@ class GaugeWidget(DraggableWidget):
         """Set the gauge value and update display"""
         # Ensure value is within range
         self.value = max(self.min_value, min(value, self.max_value))
+        # Format to 2 decimal places
         self.value_label.setText(f"{self.value:.2f} {self.units}")
         self.gauge_area.update()  # Force repaint
     
@@ -628,6 +631,9 @@ class TableWidget(DraggableWidget):
                 value = data_dict[param_name]
                 if isinstance(value, bool):
                     value = "On" if value else "Off"
+                # Format numeric values to 2 decimal places
+                elif isinstance(value, (int, float)):
+                    value = f"{value:.2f}"
                 self.table.item(row, 1).setText(str(value))
     
     def on_save_clicked(self):

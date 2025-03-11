@@ -5,9 +5,9 @@ import sys
 import time
 import numpy as np
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, 
-                            QVBoxLayout, QHBoxLayout, QPushButton)
+                            QVBoxLayout, QHBoxLayout, QPushButton, QLabel)
 from PyQt5.QtCore import QTimer, Qt
-
+from PyQt5.QtGui import QPixmap
 import argparse
 
 # Import custom modules
@@ -65,6 +65,13 @@ class EVChargingMonitor(QMainWindow):
         self.setup_tables()
         self.setup_gauges()
         self.setup_control_buttons()
+        
+        # Create a QLabel for the logo
+        self.logo_label = QLabel(self.central_widget)
+        self.logo_label.setGeometry(850, 10, 150, 50)  # Adjust position and size as needed
+        logo_pixmap = QPixmap("QEERI_logo.png")
+        self.logo_label.setPixmap(logo_pixmap.scaled(150, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.logo_label.show()
     
     def setup_graphs(self):
         """Create and configure graph widgets"""
