@@ -5,7 +5,7 @@ import sys
 import time
 import numpy as np
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, 
-                            QVBoxLayout, QHBoxLayout, QPushButton, QLabel)
+                            QVBoxLayout, QHBoxLayout, QPushButton, QTabWidget, QTextBrowser, QLabel)
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPixmap
 import argparse
@@ -53,26 +53,84 @@ class EVChargingMonitor(QMainWindow):
         self.setWindowTitle("EV Charging Station Monitor")
         self.setGeometry(100, 100, 1280, 800)
         
-        # Central widget - use a single widget for everything
-        self.central_widget = QWidget()
-        self.setCentralWidget(self.central_widget)
+        # Create tab widget as central widget
+        self.tab_widget = QTabWidget(self)
+        self.setCentralWidget(self.tab_widget)
         
-        # Don't set any layout - we're using absolute positioning
-        # (Removing the line that was causing the error)
+        # Main tab for monitoring
+        self.monitoring_tab = QWidget()
+        self.tab_widget.addTab(self.monitoring_tab, "Monitoring")
         
-        # Create all UI elements - everything directly on the central widget
+        # About tab
+        self.about_tab = QWidget()
+        self.tab_widget.addTab(self.about_tab, "About")
+        
+        # Set the monitoring tab as our central widget for existing code
+        self.central_widget = self.monitoring_tab
+        
+        # Create all UI elements on the monitoring tab
         self.setup_graphs()
         self.setup_tables()
         self.setup_gauges()
         self.setup_control_buttons()
         
-        # Create a QLabel for the logo
+        # Add the QEERI logo to the monitoring tab
         self.logo_label = QLabel(self.central_widget)
-        self.logo_label.setGeometry(850, 10, 150, 50)  # Adjust position and size as needed
+        self.logo_label.setGeometry(1560, 10, 350, 100)  # Large logo size
         logo_pixmap = QPixmap("QEERI_logo.png")
-        self.logo_label.setPixmap(logo_pixmap.scaled(150, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.logo_label.setPixmap(logo_pixmap.scaled(350, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.logo_label.show()
+        
+        # Setup the About tab
+        self.setup_about_tab()
     
+    def setup_about_tab(self):
+        """Set up the About tab with project information"""
+        layout = QVBoxLayout(self.about_tab)
+        
+        # Add logo at the top
+        logo_label = QLabel()
+        logo_pixmap = QPixmap("QEERI_logo.png")
+        logo_label.setPixmap(logo_pixmap.scaled(350, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        logo_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(logo_label)
+        
+        # Add text content
+        about_text = QTextBrowser()
+        about_text.setOpenExternalLinks(True)
+        about_text.setHtml("""
+        <div style="text-align: center;">
+            <h2>EV Charging Station Monitoring System</h2>
+            <p>Version 1.0</p>
+            <p>&copy; 2025 QEERI</p>
+            <br>
+            <h3>Developed by:</h3>
+            <p>Eng. Abdulaziz Alswiti</p>
+            <br>
+            <h3>Under the supervision of:</h3>
+            <p>Dr. Ali Sharida</p>
+            <br>
+            <h3>About This Project:</h3>
+            <p>This system provides real-time monitoring of an EV charging station, displaying voltage, current, and power measurements. 
+            It can receive data from hardware via UDP communication and visualize the parameters through dynamic graphs and gauges.</p>
+            <p>The system features:</p>
+            <ul style="text-align: left; margin-left: 100px; margin-right: 100px;">
+                <li>Three-phase voltage and current visualization</li>
+                <li>Power flow monitoring between grid, PV, EV, and battery</li>
+                <li>Real-time parameter display</li>
+                <li>Data logging capabilities</li>
+            </ul>
+            <br>
+            <p>Qatar Environment and Energy Research Institute (QEERI)</p>
+            <p>Current Date: %s</p>
+        </div>
+        """ % (time.strftime("%Y-%m-%d")))  # Add current date
+        
+        # Set a nice font size
+        about_text.setStyleSheet("font-size: 20px;")
+        
+        layout.addWidget(about_text)
+
     def setup_graphs(self):
         """Create and configure graph widgets"""
         # Voltage graph

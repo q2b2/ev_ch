@@ -4,7 +4,7 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                             QTableWidget, QTableWidgetItem, QPushButton,
                             QLineEdit, QRadioButton, QButtonGroup, QFrame,
-                            QSizePolicy, QApplication)
+                            QSizePolicy, QApplication, QHeaderView)
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 import pyqtgraph as pg
 import numpy as np
@@ -168,136 +168,262 @@ class DraggableWidget(QFrame):
         # Force update of the widget contents
         self.update()
 
+class ColorLabel(QLabel):
+    """
+    Custom label with colored line indicator for graph legends.
+    Displays a small colored line followed by text.
+    """
+    def __init__(self, text, color, parent=None):
+        super().__init__(text, parent)
+        self.color = color
+        # Add some margins to better separate the color indicator from text
+        self.setContentsMargins(15, 0, 5, 0)
+    
+    def paintEvent(self, event):
+        # Custom paint event to draw colored line indicator
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        # Draw color line indicator - this creates the colored line before the text
+        pen = QPen(QColor(*self.color))
+        pen.setWidth(2)  # Line thickness - increase for thicker indicator
+        painter.setPen(pen)
+        # Draw horizontal line at vertical center of label
+        painter.drawLine(2, self.height() // 2, 12, self.height() // 2)
+        
+        # Draw text (parent's paint event)
+        super().paintEvent(event)
+
 
 class GraphWidget(DraggableWidget):
-    """Widget for displaying real-time graphs"""
+    """
+    Widget for displaying real-time graphs with centered title and 
+    right-aligned horizontal legends.
+    
+    This widget combines a title, legend, and plot area in a 
+    vertically stacked layout.
+    """
     
     def __init__(self, parent=None, title="Graph", widget_id=None):
         super().__init__(parent, widget_id)
         
-        # Main layout
+        # Main layout - Contains header (title+legend) and plot
         layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)  # Adjust widget margins here
         
-        # Title label
+        #----------------------------------------
+        # Header Section (Title + Legend)
+        #----------------------------------------
+        
+        # Create header layout with title and legend
+        header_layout = QHBoxLayout()
+        # Reduce padding around the header layout 
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(5)  # Space between title and legend area
+        
+        # Left spacer - pushes title to center
+        header_layout.addStretch(1)
+        
+        # Title label - centered in middle of header
         self.title_label = QLabel(title)
-        self.title_label.setAlignment(Qt.AlignCenter)
-        self.title_label.setStyleSheet("font-weight: bold; font-size: 14px;")
-        layout.addWidget(self.title_label)
+        # This line controls the title style and size
+        self.title_label.setStyleSheet("font-weight: bold; font-size: 14px;")  # <-- CHANGE TITLE SIZE HERE
+        self.title_label.setAlignment(Qt.AlignCenter)  # Center align the text
+        # Add title to header with stretch factor 2 (middle section)
+        header_layout.addWidget(self.title_label, 2)
         
-        # Create PlotWidget
+        # Right section with legends - pushed to right side
+        right_container = QWidget()
+        right_layout = QHBoxLayout(right_container)
+        right_layout.setContentsMargins(0, 0, 5, 0)  # Small right margin
+        
+        # Add right-side spacer to push legends to far right
+        right_layout.addStretch(1)
+        
+        # Legends container - holds all legend labels
+        self.legend_container = QWidget()
+        self.legend_layout = QHBoxLayout(self.legend_container)
+        # Reduce space around legends
+        self.legend_layout.setContentsMargins(0, 0, 0, 0)
+        # This line controls the space between legend items
+        self.legend_layout.setSpacing(10)  # <-- CHANGE SPACING BETWEEN LEGEND ITEMS
+        # Right-align and vertically center the legends
+        self.legend_layout.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        # Add legend container to right section layout
+        right_layout.addWidget(self.legend_container)
+        
+        # Add the right container to header with stretch factor 2
+        header_layout.addWidget(right_container, 2)
+        
+        # Add header section to main layout
+        layout.addLayout(header_layout)
+        
+        #----------------------------------------
+        # Plot Section
+        #----------------------------------------
+        
+        # Create PyQtGraph PlotWidget for data visualization
         self.plot_widget = pg.PlotWidget()
         self.plot_widget.setBackground('w')  # White background
-        self.plot_widget.showGrid(x=True, y=True)
-        layout.addWidget(self.plot_widget)
+        self.plot_widget.showGrid(x=True, y=True)  # Show grid lines
         
+        # Add plot widget to main layout with stretch factor
+        # This makes the plot expand to fill available space
+        layout.addWidget(self.plot_widget, stretch=1)
+        
+        # Set the assembled layout for this widget
         self.setLayout(layout)
         
-        # Plot lines and legend setup - will be configured differently for each graph type
-        self.lines = []
-        self.colors = [(255, 0, 0), (0, 0, 255), (0, 200, 0), (150, 150, 0)]
-        
-# Update these methods in GraphWidget class in ui_components.py:
-
+        # Plot lines and colors setup
+        self.lines = []  # Will store plot line references
+        # Color definitions for different line types (R,G,B) format
+        # Change these values to adjust plot line colors
+        self.colors = [(255, 0, 0),    # Red
+                       (0, 0, 255),    # Blue
+                       (0, 200, 0),    # Green
+                       (150, 150, 0)]  # Yellow-ish
+    
     def setup_voltage_graph(self):
-        """Configure widget for voltage graph"""
+        """
+        Configure widget for voltage graph.
+        Sets up title, axes, range, and creates plot lines with legend.
+        """
+        # Set the widget title
         self.title_label.setText("Grid Voltage")
-        self.plot_widget.setTitle("3-Phase Voltage")
-        self.plot_widget.setLabel('left', "Voltage", units='V')
-        self.plot_widget.setLabel('bottom', "Time", units='s')
-        self.plot_widget.setYRange(-250, 250)
         
-        # Clear any existing legend and lines
-        if hasattr(self.plot_widget, 'legend'):
-            self.plot_widget.legend.clear()
+        # Configure the plot widget
+        self.plot_widget.setTitle("")  # Clear default title (we use our custom title)
+        self.plot_widget.setLabel('left', "Voltage", units='V')  # Y-axis label
+        self.plot_widget.setLabel('bottom', "Time", units='s')   # X-axis label
+        self.plot_widget.setYRange(-250, 250)  # Set Y-axis limits
+        
+        # Clear any existing legend items from previous configurations
+        for i in reversed(range(self.legend_layout.count())): 
+            widget = self.legend_layout.itemAt(i).widget()
+            if widget:  # Check if it's a widget (not a spacer)
+                widget.setParent(None)
+        
+        # Clear existing plot lines
         self.plot_widget.clear()
         self.lines = []
         
-        # Create legend in top right corner
-        legend = self.plot_widget.addLegend(offset=(5, 5))
-        legend.setPos(self.plot_widget.width()-120, 10)  # Position in top-right
-        legend.setBrush(pg.mkBrush(255, 255, 255, 230))
-        legend.setPen(pg.mkPen(100, 100, 100))
-        
-        # Add plot lines for each phase with explicit names
+        # Add custom legend labels for voltage phases
         phase_names = ['Vg,a', 'Vg,b', 'Vg,c']
         for i, name in enumerate(phase_names):
-            pen = pg.mkPen(color=self.colors[i], width=2)
-            line = self.plot_widget.plot([], [], pen=pen, name=name)
-            self.lines.append(line)
-
-    def setup_current_graph(self):
-        """Configure widget for current graph"""
-        self.title_label.setText("Grid Current")
-        self.plot_widget.setTitle("3-Phase Current")
-        self.plot_widget.setLabel('left', "Current", units='A')
-        self.plot_widget.setLabel('bottom', "Time", units='s')
-        self.plot_widget.setYRange(-10, 10)
+            legend_item = ColorLabel(name, self.colors[i])
+            # This line controls the legend item text style and size
+            legend_item.setStyleSheet("color: black; font-size: 14px;")  # <-- CHANGE LEGEND SIZE HERE
+            self.legend_layout.addWidget(legend_item)
         
-        # Clear any existing legend and lines
-        if hasattr(self.plot_widget, 'legend'):
-            self.plot_widget.legend.clear()
+        # Add plot lines for each phase
+        for i in range(len(phase_names)):
+            # Create a pen with the appropriate color and width
+            pen = pg.mkPen(color=self.colors[i], width=2)  # <-- CHANGE LINE THICKNESS HERE
+            # Add an empty line series to the plot
+            line = self.plot_widget.plot([], [], pen=pen)
+            # Store reference to the line for later data updates
+            self.lines.append(line)
+    
+    def setup_current_graph(self):
+        """
+        Configure widget for current graph.
+        Sets up title, axes, range, and creates plot lines with legend.
+        """
+        # Set the widget title
+        self.title_label.setText("Grid Current")
+        
+        # Configure the plot widget
+        self.plot_widget.setTitle("")  # Clear default title
+        self.plot_widget.setLabel('left', "Current", units='A')  # Y-axis label
+        self.plot_widget.setLabel('bottom', "Time", units='s')   # X-axis label
+        self.plot_widget.setYRange(-10, 10)  # Set Y-axis limits for current
+        
+        # Clear any existing legend items
+        for i in reversed(range(self.legend_layout.count())): 
+            widget = self.legend_layout.itemAt(i).widget()
+            if widget:
+                widget.setParent(None)
+        
+        # Clear existing plot lines
         self.plot_widget.clear()
         self.lines = []
         
-        # Create a proper legend with background
-        legend = self.plot_widget.addLegend(offset=(5, 5))
-        legend.setBrush(pg.mkBrush(255, 255, 255, 230))
-        legend.setPen(pg.mkPen(100, 100, 100))
-        
-        # Add plot lines for each phase with explicit names
+        # Add custom legend labels for current phases
         phase_names = ['Ig,a', 'Ig,b', 'Ig,c']
         for i, name in enumerate(phase_names):
-            pen = pg.mkPen(color=self.colors[i], width=2)
-            # The key is to set the name parameter here
-            line = self.plot_widget.plot([], [], pen=pen, name=name)
-            self.lines.append(line)
-
-    def setup_power_graph(self):
-        """Configure widget for power graph"""
-        self.title_label.setText("Power Distribution")
-        self.plot_widget.setTitle("System Power")
-        self.plot_widget.setLabel('left', "Power", units='W')
-        self.plot_widget.setLabel('bottom', "Time", units='s')
-        self.plot_widget.setYRange(-5000, 3000)
+            legend_item = ColorLabel(name, self.colors[i])
+            # Legend style and size
+            legend_item.setStyleSheet("color: black; font-size: 14px;")  # <-- CHANGE LEGEND SIZE HERE
+            self.legend_layout.addWidget(legend_item)
         
-        # Clear any existing legend and lines
-        if hasattr(self.plot_widget, 'legend'):
-            self.plot_widget.legend.clear()
+        # Add plot lines for each phase
+        for i in range(len(phase_names)):
+            pen = pg.mkPen(color=self.colors[i], width=2)
+            line = self.plot_widget.plot([], [], pen=pen)
+            self.lines.append(line)
+    
+    def setup_power_graph(self):
+        """
+        Configure widget for power graph.
+        Sets up title, axes, range, and creates plot lines with legend.
+        """
+        # Set the widget title
+        self.title_label.setText("Power Distribution")
+        
+        # Configure the plot widget
+        self.plot_widget.setTitle("")  # Clear default title
+        self.plot_widget.setLabel('left', "Power", units='W')    # Y-axis label
+        self.plot_widget.setLabel('bottom', "Time", units='s')   # X-axis label
+        self.plot_widget.setYRange(-5000, 3000)  # Set Y-axis limits for power
+        
+        # Clear any existing legend items
+        for i in reversed(range(self.legend_layout.count())): 
+            widget = self.legend_layout.itemAt(i).widget()
+            if widget:
+                widget.setParent(None)
+        
+        # Clear existing plot lines
         self.plot_widget.clear()
         self.lines = []
         
-        # Create a proper legend with background
-        legend = self.plot_widget.addLegend(offset=(5, 5))
-        legend.setBrush(pg.mkBrush(255, 255, 255, 230))
-        legend.setPen(pg.mkPen(100, 100, 100))
-        
-        # Add plot lines for each power source with explicit names
+        # Add custom legend labels for power sources
         power_names = ['P_grid', 'P_pv', 'P_ev', 'P_battery']
         for i, name in enumerate(power_names):
+            legend_item = ColorLabel(name, self.colors[i])
+            # Legend style and size
+            legend_item.setStyleSheet("color: black; font-size: 14px;")  # <-- CHANGE LEGEND SIZE HERE
+            self.legend_layout.addWidget(legend_item)
+        
+        # Add plot lines for each power source
+        for i in range(len(power_names)):
             pen = pg.mkPen(color=self.colors[i], width=2)
-            # The key is to set the name parameter here
-            line = self.plot_widget.plot([], [], pen=pen, name=name)
+            line = self.plot_widget.plot([], [], pen=pen)
             self.lines.append(line)
     
     def update_voltage_data(self, time_data, va_data, vb_data, vc_data):
         """Update the voltage graph with new data"""
-        self.lines[0].setData(time_data, va_data)
-        self.lines[1].setData(time_data, vb_data)
-        self.lines[2].setData(time_data, vc_data)
+        # Check if lines have been initialized
+        if len(self.lines) >= 3:
+            self.lines[0].setData(time_data, va_data)
+            self.lines[1].setData(time_data, vb_data)
+            self.lines[2].setData(time_data, vc_data)
     
     def update_current_data(self, time_data, ia_data, ib_data, ic_data):
         """Update the current graph with new data"""
-        self.lines[0].setData(time_data, ia_data)
-        self.lines[1].setData(time_data, ib_data)
-        self.lines[2].setData(time_data, ic_data)
+        # Check if lines have been initialized
+        if len(self.lines) >= 3:
+            self.lines[0].setData(time_data, ia_data)
+            self.lines[1].setData(time_data, ib_data)
+            self.lines[2].setData(time_data, ic_data)
     
     def update_power_data(self, time_data, p_grid, p_pv, p_ev, p_battery):
         """Update the power graph with new data"""
-        self.lines[0].setData(time_data, p_grid)
-        self.lines[1].setData(time_data, p_pv)
-        self.lines[2].setData(time_data, p_ev)
-        self.lines[3].setData(time_data, p_battery)
-        
+        # Check if lines have been initialized
+        if len(self.lines) >= 4:
+            self.lines[0].setData(time_data, p_grid)
+            self.lines[1].setData(time_data, p_pv)
+            self.lines[2].setData(time_data, p_ev)
+            self.lines[3].setData(time_data, p_battery)
 
 class GaugeWidget(DraggableWidget):
     """Widget for displaying gauge measurements"""
@@ -467,6 +593,12 @@ class TableWidget(DraggableWidget):
         # Main layout
         layout = QVBoxLayout()
         
+        # Adjust overall widget margins here (left, top, right, bottom)
+        layout.setContentsMargins(0, 0, 0, 0)  # <-- WIDGET MARGINS HERE
+
+        # Adjust spacing between widgets inside the layout
+        layout.setSpacing(0)  # <-- SPACING BETWEEN COMPONENTS (title, table, button)
+
         # Add title label
         self.title_label = QLabel(title)
         self.title_label.setAlignment(Qt.AlignCenter)
@@ -477,7 +609,19 @@ class TableWidget(DraggableWidget):
         self.table = QTableWidget()
         self.table.setColumnCount(3)
         self.table.setHorizontalHeaderLabels(["Parameter", "Value", "Input"])
-        self.table.horizontalHeader().setStretchLastSection(True)
+        
+        # Configure table for auto-fitting
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)  # Parameter column
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)  # Value column
+        self.table.horizontalHeader().setStretchLastSection(True)  # Input column stretches
+        
+        # Additional table settings for better sizing
+        self.table.setVerticalScrollMode(QTableWidget.ScrollPerPixel)
+        self.table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
+        self.table.verticalHeader().hide()  # Remove row numbers for cleaner look
+        self.table.setShowGrid(True)
+        self.table.setAlternatingRowColors(True)  # Improves readability
+        
         layout.addWidget(self.table)
         
         # Save button
@@ -631,10 +775,14 @@ class TableWidget(DraggableWidget):
                 value = data_dict[param_name]
                 if isinstance(value, bool):
                     value = "On" if value else "Off"
-                # Format numeric values to 2 decimal places
                 elif isinstance(value, (int, float)):
+                    # Format numbers to two decimal places
                     value = f"{value:.2f}"
+                    
                 self.table.item(row, 1).setText(str(value))
+        
+        # Adjust row heights after updating data
+        self.table.resizeRowsToContents()
     
     def on_save_clicked(self):
         """Handle save button click - collect input values and emit signal"""
