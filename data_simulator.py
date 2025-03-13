@@ -297,6 +297,38 @@ class DataSimulator:
                 "reactive_power": reactive_power + random.uniform(-10, 10)
             }
     
+    def get_hub_data(self):
+        """
+        Get data for the Smart Energy Hub.
+        
+        Returns:
+        --------
+        dict
+            Dictionary containing hub component status values.
+        """
+        if self.use_real_data and self.udp_client and self.udp_client.is_connected():
+            # Get real data from UDP client
+            latest_data = self.udp_client.get_latest_data()
+            
+            return {
+                "s1_status": latest_data.get('S1_Status', 0),
+                "s2_status": latest_data.get('S2_Status', 0),
+                "s3_status": latest_data.get('S3_Status', 0),
+                "s4_status": latest_data.get('S4_Status', 0),
+                "ev_soc": latest_data.get('EV_SoC', 0),
+                "battery_soc": latest_data.get('Battery_SoC', 0),
+            }
+        else:
+            # Generate simulated status data
+            return {
+                "s1_status": random.randint(2, 2),
+                "s2_status": random.randint(2, 2),
+                "s3_status": random.randint(1, 1),
+                "s4_status": random.randint(3, 3),
+                "ev_soc": random.uniform(10, 90),
+                "battery_soc": random.uniform(20, 80),
+            }
+
     def update_parameters(self, parameter, value):
         """
         Update internal parameters based on user input.

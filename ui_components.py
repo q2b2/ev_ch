@@ -4,11 +4,11 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                             QTableWidget, QTableWidgetItem, QPushButton,
                             QLineEdit, QRadioButton, QButtonGroup, QFrame,
-                            QSizePolicy, QApplication, QHeaderView)
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal
+                            QSizePolicy, QApplication, QHeaderView, QGridLayout, QCheckBox, QSpacerItem, QSizePolicy)
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QSize
 import pyqtgraph as pg
 import numpy as np
-from PyQt5.QtGui import QColor, QPainter, QPen, QBrush, QFont
+from PyQt5.QtGui import QColor, QPainter, QPen, QBrush, QFont, QMovie, QPixmap
 
 class DraggableWidget(QFrame):
     """Base class for all draggable and resizable widgets"""
@@ -865,3 +865,189 @@ class ButtonWidget(DraggableWidget):
         if 0 <= index < len(self.buttons):
             return self.buttons[index]
         return None
+
+class EnergyHubWidget(DraggableWidget):
+    """Widget for displaying the Smart Energy Hub visualization"""
+    
+    def __init__(self, parent=None, widget_id="energy_hub"):
+        super().__init__(parent, widget_id)
+        
+        # Main layout
+        layout = QVBoxLayout()
+        
+        # Title label
+        self.title_label = QLabel("Smart Energy Hub")
+        self.title_label.setAlignment(Qt.AlignCenter)
+        self.title_label.setStyleSheet("font-weight: bold; font-size: 18px;")
+        layout.addWidget(self.title_label)
+        
+        # Container for the hub visualization
+        self.hub_container = QWidget()
+        self.hub_layout = QGridLayout(self.hub_container)
+        self.hub_layout.setContentsMargins(10, 10, 10, 10)
+        self.hub_layout.setSpacing(10)
+        
+        # Load all required images
+        self.images = {
+            'transformer': QPixmap("4core-b.png"),
+            'pv': QPixmap("pv_panel.png"),
+            'ev': QPixmap("EV.png"),
+            'grid': QPixmap("grid.png"),
+            'battery': QPixmap("Battery.png"),
+            'off': QPixmap("off.PNG"),
+            'on': QPixmap("on.PNG")
+        }
+        
+        # Load GIFs
+        self.right_gif = QMovie("right.gif")
+        self.left_gif = QMovie("left.gif")
+        
+        # Create and arrange all hub components
+        self.setup_hub_components()
+        
+        layout.addWidget(self.hub_container)
+        self.setLayout(layout)
+        
+        # Initialize status values
+        self.s1_status = 0  # PV panel status
+        self.s2_status = 0  # EV status
+        self.s3_status = 0  # Grid status
+        self.s4_status = 0  # Battery status
+        self.ev_soc = 0     # EV state of charge
+        self.battery_soc = 0  # Battery state of charge
+        
+        # Update initial statuses
+        self.update_all_statuses()
+    
+    def setup_hub_components(self):
+        """Set up all the components of the energy hub"""
+        # Add spacing to make layout more readable
+        self.hub_layout.setSpacing(0)
+        self.hub_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Create a grid with sufficient columns (0-6)
+        # We'll use column 0 for leftmost components
+        
+        # Middle transformer
+        self.transformer_label = QLabel()
+        self.transformer_label.setPixmap(self.images['transformer'].scaled(300, 250, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.transformer_label.setAlignment(Qt.AlignCenter)
+        self.hub_layout.addWidget(self.transformer_label, 1, 3, 2, 2)  # Center position, spans 2 rows, 2 cols
+        
+        # Left side - PV Panel (s1)
+        self.pv_label = QLabel()
+        self.pv_label.setPixmap(self.images['pv'].scaled(140, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.pv_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.hub_layout.addWidget(self.pv_label, 1, 0, 1, 2)  # Row 1, Col 0-1 (leftmost position)
+        
+        # PV Status indicator (right of PV)
+        self.pv_status_label = QLabel()
+        self.pv_status_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.hub_layout.addWidget(self.pv_status_label, 1, 2, 1, 1)  # Row 1, Col 2
+        
+        # Left side - EV (s2)
+        self.ev_label = QLabel()
+        self.ev_label.setPixmap(self.images['ev'].scaled(140, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.ev_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.hub_layout.addWidget(self.ev_label, 2, 0, 1, 2)  # Row 3, Col 0-1
+        
+        # EV Status indicator (right of EV)
+        self.ev_status_label = QLabel()
+        self.ev_status_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.hub_layout.addWidget(self.ev_status_label, 2, 2, 1, 1)  # Row 3, Col 2
+        
+        # Right side - Grid (s3)
+        self.grid_status_label = QLabel()
+        self.grid_status_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.hub_layout.addWidget(self.grid_status_label, 1, 5, 1, 1)  # Row 1, Col 5
+        
+        self.grid_label = QLabel()
+        self.grid_label.setPixmap(self.images['grid'].scaled(120, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.grid_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.hub_layout.addWidget(self.grid_label, 1, 6, 1, 1)  # Row 1, Col 6
+        
+        # Right side - Battery (s4)
+        self.battery_status_label = QLabel()
+        self.battery_status_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.hub_layout.addWidget(self.battery_status_label, 2, 5, 1, 1)  # Row 3, Col 5
+        
+        self.battery_label = QLabel()
+        self.battery_label.setPixmap(self.images['battery'].scaled(120, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.battery_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.hub_layout.addWidget(self.battery_label, 2, 6, 1, 1)  # Row 3, Col 6
+        
+        # SoC Labels
+        self.ev_soc_label = QLabel("EV SoC: 0%")
+        self.ev_soc_label.setAlignment(Qt.AlignCenter)
+        self.ev_soc_label.setStyleSheet("font-weight: bold;")
+        self.hub_layout.addWidget(self.ev_soc_label, 4, 0, 1, 3)  # Row 4, Col 0-2
+        
+        self.battery_soc_label = QLabel("Battery SoC: 0%")
+        self.battery_soc_label.setAlignment(Qt.AlignCenter)
+        self.battery_soc_label.setStyleSheet("font-weight: bold;")
+        self.hub_layout.addWidget(self.battery_soc_label, 4, 5, 1, 2)  # Row 4, Col 5-6
+        
+        # Add a row spacer at the top to balance the layout
+        spacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        self.hub_layout.addItem(spacer, 0, 3, 1, 2)
+    
+    def update_pv_status(self, status):
+        """Update PV panel status indicator"""
+        self.s1_status = status
+        self._update_status_label(self.pv_status_label, status)
+    
+    def update_ev_status(self, status):
+        """Update EV status indicator"""
+        self.s2_status = status
+        self._update_status_label(self.ev_status_label, status)
+    
+    def update_grid_status(self, status):
+        """Update grid status indicator"""
+        self.s3_status = status
+        self._update_status_label(self.grid_status_label, status)
+    
+    def update_battery_status(self, status):
+        """Update battery status indicator"""
+        self.s4_status = status
+        self._update_status_label(self.battery_status_label, status)
+    
+    def _update_status_label(self, label, status):
+        """Update a status indicator label based on status value"""
+        # Stop any existing movie
+        if label.movie():
+            label.movie().stop()
+            label.setMovie(None)
+        
+        if status == 0:  # Off
+            label.setPixmap(self.images['off'].scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        elif status == 1:  # O
+            label.setPixmap(self.images['on'].scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        elif status == 2:  # Right direction
+            movie = QMovie("right.gif")
+            label.setMovie(movie)
+            movie.setScaledSize(QSize(100, 100))
+            movie.start()
+        elif status == 3:  # Left direction
+            movie = QMovie("left.gif")
+            label.setMovie(movie)
+            movie.setScaledSize(QSize(100, 100))
+            movie.start()
+    
+    def update_ev_soc(self, soc):
+        """Update EV state of charge display"""
+        self.ev_soc = soc
+        self.ev_soc_label.setText(f"EV SoC: {soc:.1f}%")
+    
+    def update_battery_soc(self, soc):
+        """Update battery state of charge display"""
+        self.battery_soc = soc
+        self.battery_soc_label.setText(f"Battery SoC: {soc:.1f}%")
+    
+    def update_all_statuses(self):
+        """Update all status indicators to current values"""
+        self.update_pv_status(self.s1_status)
+        self.update_ev_status(self.s2_status)
+        self.update_grid_status(self.s3_status)
+        self.update_battery_status(self.s4_status)
+        self.update_ev_soc(self.ev_soc)
+        self.update_battery_soc(self.battery_soc)

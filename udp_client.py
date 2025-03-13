@@ -201,8 +201,8 @@ class UDPClient:
         """
         Process received UDP data packet.
         
-        The data is expected as a CSV string with 9 values:
-        Vd,Id,Vdc,Vev,Vpv,Iev,Ipv,Ppv,Pev
+        The data is expected as a CSV string with values:
+        Vd,Id,Vdc,Vev,Vpv,Iev,Ipv,Ppv,Pev,Pbettery,Pg,Qg,PF,Fg,THD,s1,s2,s3,s4,SoC_bettery,SoC_EV
         
         Parameters:
         -----------
@@ -219,31 +219,53 @@ class UDPClient:
             values = data_str.split(',')
             
             # Ensure we have the expected number of values
-            if len(values) != 9:
-                print(f"Warning: Expected 9 values, got {len(values)}")
+            expected_values = 21  # Updated to match the new data format
+            if len(values) != expected_values:
+                print(f"Warning: Expected {expected_values} values, got {len(values)}")
                 return
             
             # Parse the values into floats
             try:
-                vd = float(values[0])  # Grid Voltage
-                id_val = float(values[1])  # Grid Current
-                vdc = float(values[2])  # DC Link Voltage
-                vev = float(values[3])  # EV Voltage
-                vpv = float(values[4])  # PV Voltage
-                iev = float(values[5])  # EV Current
-                ipv = float(values[6])  # PV Current
-                ppv = float(values[7])  # PV Power
-                pev = float(values[8])  # EV Power
+                vd = float(values[0])         # Grid Voltage
+                id_val = float(values[1])     # Grid Current
+                vdc = float(values[2])        # DC Link Voltage
+                vev = float(values[3])        # EV Voltage
+                vpv = float(values[4])        # PV Voltage
+                iev = float(values[5])        # EV Current
+                ipv = float(values[6])        # PV Current
+                ppv = float(values[7])        # PV Power
+                pev = float(values[8])        # EV Power
+                
+                # New parameters from mentor:
+                pbattery = float(values[9])   # Battery Power
+                pgrid = float(values[10])     # Grid Power (now directly measured)
+                qgrid = float(values[11])     # Grid Reactive Power
+                power_factor = float(values[12])  # Power Factor
+                frequency = float(values[13]) # Grid Frequency
+                thd = float(values[14])       # Total Harmonic Distortion
+                
+                # Status indicators (int values 0-3)
+                s1 = int(float(values[15]))   # PV panel status
+                s2 = int(float(values[16]))   # EV status
+                s3 = int(float(values[17]))   # Grid status
+                s4 = int(float(values[18]))   # Battery status
+                
+                # State of charge values
+                soc_battery = float(values[19])  # Battery SoC percentage
+                soc_ev = float(values[20])       # EV SoC percentage
+                
+                # Ensure status values are within valid range (0-3)
+                s1 = max(0, min(s1, 3))
+                s2 = max(0, min(s2, 3))
+                s3 = max(0, min(s3, 3))
+                s4 = max(0, min(s4, 3))
+                
             except ValueError as e:
                 print(f"Error parsing data values: {e}")
                 print(f"Raw data: {data_str}")
                 return
-            
-            # Calculate derived values
-            grid_power = vd * id_val  # Simple P = V * I calculation
-            battery_power = grid_power + ppv + pev  # Battery absorbs/provides the balance
-            
-            # Update latest data
+                
+            # Update latest data with all parameters
             self.latest_data['Grid_Voltage'] = vd
             self.latest_data['Grid_Current'] = id_val
             self.latest_data['DCLink_Voltage'] = vdc
@@ -253,8 +275,19 @@ class UDPClient:
             self.latest_data['PhotoVoltaic_Current'] = ipv
             self.latest_data['PhotoVoltaic_Power'] = ppv
             self.latest_data['ElectricVehicle_Power'] = pev
-            self.latest_data['Battery_Power'] = battery_power
-            
+            self.latest_data['Battery_Power'] = pbattery
+            self.latest_data['Grid_Power'] = pgrid
+            self.latest_data['Grid_Reactive_Power'] = qgrid
+            self.latest_data['Power_Factor'] = power_factor
+            self.latest_data['Frequency'] = frequency
+            self.latest_data['THD'] = thd
+            self.latest_data['S1_Status'] = s1
+            self.latest_data['S2_Status'] = s2
+            self.latest_data['S3_Status'] = s3
+            self.latest_data['S4_Status'] = s4
+            self.latest_data['Battery_SoC'] = soc_battery
+            self.latest_data['EV_SoC'] = soc_ev
+                
             # Update data history
             self.data_history['Grid_Voltage'].append(vd)
             self.data_history['Grid_Current'].append(id_val)
@@ -265,8 +298,8 @@ class UDPClient:
             self.data_history['PhotoVoltaic_Current'].append(ipv)
             self.data_history['PhotoVoltaic_Power'].append(ppv)
             self.data_history['ElectricVehicle_Power'].append(pev)
-            self.data_history['Battery_Power'].append(battery_power)
-            self.data_history['Grid_Power'].append(grid_power)
+            self.data_history['Battery_Power'].append(pbattery)
+            self.data_history['Grid_Power'].append(pgrid)
             
             # Generate three-phase waveforms
             self._generate_waveforms(vd, id_val, timestamp)

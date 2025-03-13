@@ -31,102 +31,112 @@
     },
     "charging_table": {
         "pos": {
-            "x": 3,
-            "y": 128
+            "x": -1,
+            "y": -2
         },
         "size": {
-            "width": 308,
-            "height": 206
+            "width": 515,
+            "height": 344
         }
     },
     "ev_charging_table": {
         "pos": {
-            "x": 1598,
-            "y": 461
+            "x": 1414,
+            "y": 455
         },
         "size": {
-            "width": 316,
+            "width": 502,
             "height": 239
         }
     },
     "grid_settings_table": {
         "pos": {
-            "x": 1595,
-            "y": 222
+            "x": 1458,
+            "y": 216
         },
         "size": {
-            "width": 321,
-            "height": 239
+            "width": 455,
+            "height": 243
         }
     },
     "frequency_gauge": {
         "pos": {
-            "x": 889,
-            "y": 522
+            "x": 838,
+            "y": 517
         },
         "size": {
-            "width": 165,
-            "height": 132
+            "width": 177,
+            "height": 149
         }
     },
     "voltage_gauge": {
         "pos": {
-            "x": 1367,
-            "y": 522
+            "x": 1231,
+            "y": 530
         },
         "size": {
-            "width": 165,
-            "height": 132
+            "width": 177,
+            "height": 146
         }
     },
     "thd_gauge": {
         "pos": {
-            "x": 1131,
-            "y": 337
+            "x": 1042,
+            "y": 347
         },
         "size": {
-            "width": 165,
-            "height": 132
+            "width": 171,
+            "height": 147
         }
     },
     "active_power_gauge": {
         "pos": {
-            "x": 1369,
-            "y": 338
+            "x": 1194,
+            "y": 344
         },
         "size": {
-            "width": 165,
-            "height": 132
+            "width": 242,
+            "height": 147
         }
     },
     "reactive_power_gauge": {
         "pos": {
-            "x": 1146,
-            "y": 525
+            "x": 991,
+            "y": 546
         },
         "size": {
-            "width": 165,
+            "width": 250,
             "height": 132
         }
     },
     "current_gauge": {
         "pos": {
-            "x": 887,
-            "y": 339
+            "x": 833,
+            "y": 341
         },
         "size": {
-            "width": 165,
-            "height": 132
+            "width": 218,
+            "height": 156
         }
     },
     "control_buttons": {
         "pos": {
-            "x": 310,
-            "y": 126
+            "x": 1571,
+            "y": 25
         },
         "size": {
-            "width": 200,
-            "height": 208
+            "width": 353,
+            "height": 200
+        }
+    },
+    "energy_hub": {
+        "pos": {
+            "x": 512,
+            "y": -2
+        },
+        "size": {
+            "width": 948,
+            "height": 344
         }
     }
 }

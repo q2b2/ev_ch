@@ -8,13 +8,15 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget,
                             QVBoxLayout, QHBoxLayout, QPushButton, QTabWidget, QTextBrowser, QLabel)
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QMovie
+from PyQt5.QtCore import QSize
 import argparse
 
 # Import custom modules
 from data_simulator import DataSimulator
 from data_logger import DataLogger
 from config_manager import ConfigManager
-from ui_components import GraphWidget, GaugeWidget, TableWidget, ButtonWidget
+from ui_components import GraphWidget, GaugeWidget, TableWidget, ButtonWidget, EnergyHubWidget
 
 class EVChargingMonitor(QMainWindow):
     """Main application window for EV Charging Station Monitor"""
@@ -39,7 +41,7 @@ class EVChargingMonitor(QMainWindow):
         # Set up update timer (50ms update rate = 20 FPS)
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_data)
-        self.timer.start(100)
+        self.timer.start(300) # Update interval in milliseconds (100ms = 10Hz)
         
         # Apply saved configurations
         self.apply_saved_layouts()
@@ -83,6 +85,9 @@ class EVChargingMonitor(QMainWindow):
         
         # Setup the About tab
         self.setup_about_tab()
+        
+        # setup the energy hub widget
+        self.setup_energy_hub()
     
     def setup_about_tab(self):
         """Set up the About tab with project information"""
@@ -233,7 +238,14 @@ class EVChargingMonitor(QMainWindow):
         
         self.button_widget.show()
         self.widgets["control_buttons"] = self.button_widget
-    
+
+    def setup_energy_hub(self):
+        """Create and configure the Smart Energy Hub widget"""
+        self.energy_hub = EnergyHubWidget(self.central_widget, "energy_hub")
+        self.energy_hub.setGeometry(950, 310, 400, 300)  # Adjust position and size as needed
+        self.energy_hub.show()
+        self.widgets["energy_hub"] = self.energy_hub
+
     def update_data(self):
         """Update all UI components with new data from the simulator"""
         # Update voltage graph
@@ -262,6 +274,15 @@ class EVChargingMonitor(QMainWindow):
         self.gauges[3].set_value(gauge_data["active_power"])
         self.gauges[4].set_value(gauge_data["reactive_power"])
         self.gauges[5].set_value(gauge_data["current_rms"])
+        
+        # Update Smart Energy Hub
+        hub_data = self.data_simulator.get_hub_data()
+        self.energy_hub.update_pv_status(hub_data["s1_status"])
+        self.energy_hub.update_ev_status(hub_data["s2_status"])
+        self.energy_hub.update_grid_status(hub_data["s3_status"])
+        self.energy_hub.update_battery_status(hub_data["s4_status"])
+        self.energy_hub.update_ev_soc(hub_data["ev_soc"])
+        self.energy_hub.update_battery_soc(hub_data["battery_soc"])
         
         # If logging is active, log the data
         if self.data_logger.is_logging:
