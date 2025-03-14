@@ -666,7 +666,13 @@ class TableWidget(DraggableWidget):
             
             self.table.setCellWidget(i, 2, input_widget)
         
+
         self.table.resizeColumnsToContents()
+
+        # Apply fonts - adjust sizes as needed
+        self.set_table_fonts(header_size=12, content_size=11, input_size=11, title_size=16)
+
+        self.resize_table_to_contents()
     
     def setup_ev_charging_setting_table(self):
         """Configure table for EV Charging Setting"""
@@ -727,6 +733,10 @@ class TableWidget(DraggableWidget):
                 self.table.setCellWidget(i, 2, radio_widget)
         
         self.table.resizeColumnsToContents()
+        
+        # Apply fonts - adjust sizes as needed
+        self.set_table_fonts(header_size=12, content_size=11, input_size=11, title_size=16)
+        self.resize_table_to_contents()
     
     def setup_grid_settings_table(self):
         """Configure table for Grid Settings"""
@@ -757,9 +767,78 @@ class TableWidget(DraggableWidget):
             self.table.setCellWidget(i, 2, input_widget)
         
         self.table.resizeColumnsToContents()
+
+        # Apply fonts - adjust sizes as needed
+        self.set_table_fonts(header_size=12, content_size=11, input_size=11, title_size=16)
+
+        self.resize_table_to_contents()
     
+    def resize_table_to_contents(self):
+        """Remove extra vertical space from the table"""
+        self.table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        header_height = self.table.horizontalHeader().height()
+        row_total_height = 0
+        for i in range(self.table.rowCount()):
+            row_total_height += self.table.rowHeight(i)
+        self.table.setFixedHeight(header_height + row_total_height + 2)
+
+    def set_table_fonts(self, header_size=12, content_size=11, input_size=11, title_size=14):
+        """Set font sizes for different parts of the table
+        
+        Parameters:
+            header_size (int): Font size for column headers
+            content_size (int): Font size for table cell content
+            input_size (int): Font size for input widgets
+            title_size (int): Font size for the table title
+        """
+
+        # Title font
+        self.title_label.setStyleSheet(f"font-weight: bold; font-size: {title_size}px;")
+
+        # Header font
+        header_font = QFont()
+        header_font.setPointSize(header_size)
+        header_font.setBold(True)
+        self.table.horizontalHeader().setFont(header_font)
+        
+        # Content font for cells
+        content_font = QFont()
+        content_font.setPointSize(content_size)
+        self.table.setFont(content_font)
+        
+        # Apply font to all existing cell items explicitly
+        for row in range(self.table.rowCount()):
+            for col in range(2):  # Apply to parameter and value columns (0 and 1)
+                item = self.table.item(row, col)
+                if item:
+                    item_font = QFont()
+                    item_font.setPointSize(content_size)
+                    item.setFont(item_font)
+        
+        # Apply to all input widgets in column 2
+        for row in range(self.table.rowCount()):
+            widget = self.table.cellWidget(row, 2)
+            if isinstance(widget, QLineEdit):
+                # For simple line edits
+                input_font = QFont()
+                input_font.setPointSize(input_size)
+                widget.setFont(input_font)
+            elif isinstance(widget, QLabel):
+                # For read-only labels
+                input_font = QFont()
+                input_font.setPointSize(input_size)
+                widget.setFont(input_font)
+            elif isinstance(widget, QWidget):
+                # For composite widgets like radio button containers
+                input_font = QFont()
+                input_font.setPointSize(input_size)
+                # Apply to all child widgets that accept text
+                for child in widget.findChildren((QRadioButton, QLabel, QLineEdit)):
+                    child.setFont(input_font)
+
     def update_values(self, data_dict):
         """Update the values column in the table"""
+
         if self.table_type == "charging_setting":
             value_keys = ["PV power", "EV power", "Battery power", "V_dc"]
         elif self.table_type == "ev_charging_setting":
@@ -781,6 +860,16 @@ class TableWidget(DraggableWidget):
                     
                 self.table.item(row, 1).setText(str(value))
         
+        # Reapply fonts since new text might have been added
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, 1)  # Value column
+            if item:
+                font = item.font()
+                # Maintain current font size
+                font_size = font.pointSize() if font.pointSize() > 0 else 11
+                font.setPointSize(font_size)
+                item.setFont(font)
+
         # Adjust row heights after updating data
         self.table.resizeRowsToContents()
     
