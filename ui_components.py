@@ -665,12 +665,11 @@ class TableWidget(DraggableWidget):
                 input_widget = QLineEdit("0")
             
             self.table.setCellWidget(i, 2, input_widget)
-        
 
         self.table.resizeColumnsToContents()
 
         # Apply fonts - adjust sizes as needed
-        self.set_table_fonts(header_size=12, content_size=11, input_size=11, title_size=16)
+        self.set_table_fonts(header_size=10, content_size=10, input_size=10, title_size=15)
 
         self.resize_table_to_contents()
     
@@ -735,7 +734,7 @@ class TableWidget(DraggableWidget):
         self.table.resizeColumnsToContents()
         
         # Apply fonts - adjust sizes as needed
-        self.set_table_fonts(header_size=12, content_size=11, input_size=11, title_size=16)
+        self.set_table_fonts(header_size=9, content_size=9, input_size=9, title_size=16)
         self.resize_table_to_contents()
     
     def setup_grid_settings_table(self):
