@@ -16,7 +16,7 @@ import argparse
 from data_simulator import DataSimulator
 from data_logger import DataLogger
 from config_manager import ConfigManager
-from ui_components import GraphWidget, GaugeWidget, TableWidget, ButtonWidget, EnergyHubWidget
+from ui_components import GraphWidget, GaugeWidget, TableWidget, ButtonWidget, EnergyHubWidget, GaugeGridWidget
 
 class EVChargingMonitor(QMainWindow):
     """Main application window for EV Charging Station Monitor"""
@@ -78,9 +78,9 @@ class EVChargingMonitor(QMainWindow):
         
         # Add the QEERI logo to the monitoring tab
         self.logo_label = QLabel(self.central_widget)
-        self.logo_label.setGeometry(1560, 10, 350, 100)  # Large logo size
+        self.logo_label.setGeometry(1611, 20, 300, 100)  # Large logo size
         logo_pixmap = QPixmap("QEERI_logo.png")
-        self.logo_label.setPixmap(logo_pixmap.scaled(350, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.logo_label.setPixmap(logo_pixmap.scaled(300, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.logo_label.show()
         
         # Setup the About tab
@@ -111,6 +111,7 @@ class EVChargingMonitor(QMainWindow):
             <br>
             <h3>Developed by:</h3>
             <p>Eng. Abdulaziz Alswiti</p>
+            <p>a.alswiti@hotmail.com</p>
             <br>
             <h3>Under the supervision of:</h3>
             <p>Dr. Ali Sharida</p>
@@ -186,8 +187,16 @@ class EVChargingMonitor(QMainWindow):
         self.widgets["grid_settings_table"] = self.grid_settings_table
     
     def setup_gauges(self):
-        """Create and configure gauge widgets"""
-        # Create gauges
+        """
+        Create and configure gauge widgets in a fixed grid layout.
+        
+        This method creates a single fixed widget that contains all gauges
+        arranged in a 3x2 grid at position x=749, y=408 with size 581x290.
+        """
+        # Create the gauge grid container widget
+        self.gauge_grid = GaugeGridWidget(self.central_widget, "gauge_grid")
+        
+        # Define gauge configurations - these determine the properties of each gauge
         gauge_configs = [
             {"title": "Frequency", "min": 45, "max": 55, "units": "Hz", "id": "frequency_gauge"},
             {"title": "Voltage RMS", "min": 0, "max": 250, "units": "V", "id": "voltage_gauge"},
@@ -197,30 +206,25 @@ class EVChargingMonitor(QMainWindow):
             {"title": "Current RMS", "min": 0, "max": 20, "units": "A", "id": "current_gauge"}
         ]
         
-        # Create gauges with initial positions
+        # Create gauges and add them to the grid
+        # They will be automatically positioned in a 3x2 grid (top to bottom, left to right)
         self.gauges = []
-        
-        for i, config in enumerate(gauge_configs):
-            # Position gauges in a grid (3x2)
-            col = i % 3
-            row = i // 3
-            x = 20 + col * 220
-            y = 520 + row * 220
-            
-            gauge = GaugeWidget(
-                self.central_widget, 
+        for config in gauge_configs:
+            gauge = self.gauge_grid.add_gauge(
                 config["title"], 
                 config["min"], 
                 config["max"],
                 config["units"],
                 config["id"]
             )
-            
-            gauge.setGeometry(x, y, 100, 100)
-            gauge.show()
-            
-            self.gauges.append(gauge)
-            self.widgets[config["id"]] = gauge
+            self.gauges.append(gauge)  # Keep reference for updating values
+        
+        # Display the gauge grid
+        self.gauge_grid.show()
+        
+        # Add to widgets dictionary - this enables saving/restoring layouts
+        # Use a string ID for the entire grid rather than individual gauges
+        self.widgets["gauge_grid"] = self.gauge_grid
     
     def setup_control_buttons(self):
         """Create control buttons for logging"""

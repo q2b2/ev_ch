@@ -581,6 +581,70 @@ class GaugeWidget(DraggableWidget):
             if i > 0 and i < num_major_ticks:  # Skip min and max as we already drew them
                 painter.drawText(int(label_x - 8), int(label_y + 4), f"{tick_value:.1f}")
 
+class GaugeGridWidget(QFrame):
+    """
+    Fixed position widget that contains multiple gauges arranged in a grid layout.
+    This widget is designed to display system measurements in an organized, non-movable container.
+    """
+    
+    def __init__(self, parent=None, widget_id="gauge_grid"):
+            super().__init__(parent)
+            self.widget_id = widget_id
+            
+            # Set fixed position and size as specified
+            self.setGeometry(749, 408, 581, 290)
+            self.setFixedSize(581, 290)  # Prevent resizing
+            
+            # Match the frame style of other widgets (like GraphWidget)
+            self.setFrameStyle(QFrame.Box | QFrame.Raised)  # Changed from Panel to Box
+            self.setLineWidth(2)  # Changed from 1 to 2 to match other widgets
+            
+            # Use a grid layout to arrange gauges in rows and columns
+            self.layout = QGridLayout(self)
+            self.layout.setContentsMargins(0, 0, 0, 0)  # title margin
+            self.layout.setSpacing(10)  # Space between gauges
+            
+            # Add a title at the top of the gauge grid
+            self.title_label = QLabel("System Measurements")
+            self.title_label.setAlignment(Qt.AlignCenter)
+            self.title_label.setStyleSheet("font-weight: bold; font-size: 16px;")
+            
+            # Position the title at the top, spanning all columns
+            self.layout.addWidget(self.title_label, 0, 0, 1, 3)
+            
+            # Store references to individual gauges for later access
+            self.gauges = []
+    
+    def add_gauge(self, title, min_value, max_value, units, gauge_id=None):
+        """
+        Add a new gauge to the grid layout.
+        
+        Returns:
+            The created gauge widget for reference
+        """
+        # Calculate position in grid (2 rows, 3 columns)
+        row = (len(self.gauges) // 3) + 1  # +1 because row 0 is title
+        col = len(self.gauges) % 3
+        
+        # Create a gauge widget
+        gauge = GaugeWidget(self, title, min_value, max_value, units, gauge_id)
+        
+        # Configure gauge for use within a container - no individual frame needed
+        gauge.setFrameStyle(QFrame.NoFrame)
+        
+        # These are crucial to prevent gauges from being draggable
+        gauge.setMouseTracking(False)
+        gauge.mouseMoveEvent = lambda e: None    # Disable mouse events
+        gauge.mousePressEvent = lambda e: None
+        gauge.mouseReleaseEvent = lambda e: None
+        
+        # Add gauge to layout
+        self.layout.addWidget(gauge, row, col)
+        
+        # Store reference to gauge
+        self.gauges.append(gauge)
+        
+        return gauge
 
 class TableWidget(DraggableWidget):
     """Widget for displaying editable parameter tables"""
@@ -961,7 +1025,7 @@ class EnergyHubWidget(DraggableWidget):
         super().__init__(parent, widget_id)
         
         # Set fixed size to match your specifications
-        self.setFixedSize(948, 344)
+        self.setFixedSize(948, 290)
         
         # Main layout with minimal margins
         layout = QVBoxLayout()

@@ -31,11 +31,11 @@
     },
     "charging_table": {
         "pos": {
-            "x": 749,
-            "y": 408
+            "x": 1431,
+            "y": 117
         },
         "size": {
-            "width": 581,
+            "width": 480,
             "height": 290
         }
     },
@@ -51,78 +51,28 @@
     },
     "grid_settings_table": {
         "pos": {
-            "x": 12,
-            "y": 112
+            "x": 0,
+            "y": 117
         },
         "size": {
-            "width": 433,
+            "width": 480,
             "height": 290
         }
     },
-    "frequency_gauge": {
+    "gauge_grid": {
         "pos": {
-            "x": 1411,
-            "y": 183
+            "x": 749,
+            "y": 408
         },
         "size": {
-            "width": 135,
-            "height": 141
-        }
-    },
-    "voltage_gauge": {
-        "pos": {
-            "x": 1498,
-            "y": 254
-        },
-        "size": {
-            "width": 177,
-            "height": 146
-        }
-    },
-    "thd_gauge": {
-        "pos": {
-            "x": 1432,
-            "y": 43
-        },
-        "size": {
-            "width": 171,
-            "height": 147
-        }
-    },
-    "active_power_gauge": {
-        "pos": {
-            "x": 1538,
-            "y": 165
-        },
-        "size": {
-            "width": 242,
-            "height": 147
-        }
-    },
-    "reactive_power_gauge": {
-        "pos": {
-            "x": 1690,
-            "y": 256
-        },
-        "size": {
-            "width": 250,
-            "height": 132
-        }
-    },
-    "current_gauge": {
-        "pos": {
-            "x": 1703,
-            "y": 89
-        },
-        "size": {
-            "width": 218,
-            "height": 156
+            "width": 581,
+            "height": 290
         }
     },
     "control_buttons": {
         "pos": {
-            "x": 302,
-            "y": -64
+            "x": -2,
+            "y": 3
         },
         "size": {
             "width": 353,
@@ -131,12 +81,12 @@
     },
     "energy_hub": {
         "pos": {
-            "x": 488,
-            "y": -2
+            "x": 481,
+            "y": 117
         },
         "size": {
             "width": 948,
-            "height": 344
+            "height": 290
         }
     }
 }
