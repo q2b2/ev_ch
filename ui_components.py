@@ -312,7 +312,7 @@ class GraphWidget(DraggableWidget):
         for i, name in enumerate(phase_names):
             legend_item = ColorLabel(name, self.colors[i])
             # This line controls the legend item text style and size
-            legend_item.setStyleSheet("color: black; font-size: 14px;")  # <-- CHANGE LEGEND SIZE HERE
+            legend_item.setStyleSheet("color: black; font-size: 16px;")  # <-- CHANGE LEGEND SIZE HERE
             self.legend_layout.addWidget(legend_item)
         
         # Add plot lines for each phase
@@ -353,7 +353,7 @@ class GraphWidget(DraggableWidget):
         for i, name in enumerate(phase_names):
             legend_item = ColorLabel(name, self.colors[i])
             # Legend style and size
-            legend_item.setStyleSheet("color: black; font-size: 14px;")  # <-- CHANGE LEGEND SIZE HERE
+            legend_item.setStyleSheet("color: black; font-size: 16px;")  # <-- CHANGE LEGEND SIZE HERE
             self.legend_layout.addWidget(legend_item)
         
         # Add plot lines for each phase
@@ -391,7 +391,7 @@ class GraphWidget(DraggableWidget):
         for i, name in enumerate(power_names):
             legend_item = ColorLabel(name, self.colors[i])
             # Legend style and size
-            legend_item.setStyleSheet("color: black; font-size: 14px;")  # <-- CHANGE LEGEND SIZE HERE
+            legend_item.setStyleSheet("color: black; font-size: 16px;")  # <-- CHANGE LEGEND SIZE HERE
             self.legend_layout.addWidget(legend_item)
         
         # Add plot lines for each power source
@@ -867,25 +867,34 @@ class ButtonWidget(DraggableWidget):
         return None
 
 class EnergyHubWidget(DraggableWidget):
-    """Widget for displaying the Smart Energy Hub visualization"""
+    """Widget for displaying the Smart Energy Hub visualization optimized for 948×344 pixels"""
     
     def __init__(self, parent=None, widget_id="energy_hub"):
         super().__init__(parent, widget_id)
         
-        # Main layout
-        layout = QVBoxLayout()
+        # Set fixed size to match your specifications
+        self.setFixedSize(948, 344)
         
-        # Title label
+        # Main layout with minimal margins
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        
+        # Title label with reduced height
         self.title_label = QLabel("Smart Energy Hub")
         self.title_label.setAlignment(Qt.AlignCenter)
-        self.title_label.setStyleSheet("font-weight: bold; font-size: 18px;")
+        self.title_label.setStyleSheet("font-weight: bold; font-size: 16px; margin-bottom: 0px;")
+        self.title_label.setMaximumHeight(25)  # Keep title compact
         layout.addWidget(self.title_label)
         
-        # Container for the hub visualization
+        # Container for the hub visualization - optimized for remaining space
         self.hub_container = QWidget()
+        
+        # Grid layout with minimal padding
         self.hub_layout = QGridLayout(self.hub_container)
-        self.hub_layout.setContentsMargins(10, 10, 10, 10)
-        self.hub_layout.setSpacing(10)
+        self.hub_layout.setContentsMargins(5, 5, 5, 5)
+        self.hub_layout.setSpacing(0)
+        self.hub_layout.setAlignment(Qt.AlignCenter)  # Center the grid content
         
         # Load all required images
         self.images = {
@@ -920,76 +929,117 @@ class EnergyHubWidget(DraggableWidget):
         self.update_all_statuses()
     
     def setup_hub_components(self):
-        """Set up all the components of the energy hub"""
-        # Add spacing to make layout more readable
-        self.hub_layout.setSpacing(0)
-        self.hub_layout.setContentsMargins(0, 0, 0, 0)
+        """Set up all the components of the energy hub with proper z-ordering and sizing"""
+        from PyQt5.QtWidgets import QSizePolicy
         
-        # Create a grid with sufficient columns (0-6)
-        # We'll use column 0 for leftmost components
+        # 1. Increase spacing to prevent clipping
+        self.hub_layout.setSpacing(10)  # Add some space between cells
+        self.hub_layout.setContentsMargins(10, 10, 10, 10)  # Add margins around the grid
         
-        # Middle transformer
+        # 2. Set up components - order matters for z-ordering
+        # Place background components first, status indicators last
+        
+        # Middle transformer (add this FIRST since it should be in the background)
         self.transformer_label = QLabel()
-        self.transformer_label.setPixmap(self.images['transformer'].scaled(300, 250, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.transformer_label.setPixmap(self.images['transformer'].scaled(350, 280, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.transformer_label.setAlignment(Qt.AlignCenter)
-        self.hub_layout.addWidget(self.transformer_label, 1, 3, 2, 2)  # Center position, spans 2 rows, 2 cols
+        self.transformer_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.hub_layout.addWidget(self.transformer_label, 1, 10, 2, 6)
         
-        # Left side - PV Panel (s1)
+        # 3. Component images - add these BEFORE status indicators
+        
+        # Left side - PV Panel
         self.pv_label = QLabel()
-        self.pv_label.setPixmap(self.images['pv'].scaled(140, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.pv_label.setPixmap(self.images['pv'].scaled(160, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.pv_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.hub_layout.addWidget(self.pv_label, 1, 0, 1, 2)  # Row 1, Col 0-1 (leftmost position)
+        self.pv_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.hub_layout.addWidget(self.pv_label, 1, 0, 1, 4)
         
-        # PV Status indicator (right of PV)
-        self.pv_status_label = QLabel()
-        self.pv_status_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.hub_layout.addWidget(self.pv_status_label, 1, 2, 1, 1)  # Row 1, Col 2
-        
-        # Left side - EV (s2)
+        # Left side - EV
         self.ev_label = QLabel()
-        self.ev_label.setPixmap(self.images['ev'].scaled(140, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.ev_label.setPixmap(self.images['ev'].scaled(160, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.ev_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.hub_layout.addWidget(self.ev_label, 2, 0, 1, 2)  # Row 3, Col 0-1
+        self.ev_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.hub_layout.addWidget(self.ev_label, 2, 0, 1, 4)
         
-        # EV Status indicator (right of EV)
-        self.ev_status_label = QLabel()
-        self.ev_status_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.hub_layout.addWidget(self.ev_status_label, 2, 2, 1, 1)  # Row 3, Col 2
-        
-        # Right side - Grid (s3)
-        self.grid_status_label = QLabel()
-        self.grid_status_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.hub_layout.addWidget(self.grid_status_label, 1, 5, 1, 1)  # Row 1, Col 5
-        
+        # Right side - Grid
         self.grid_label = QLabel()
-        self.grid_label.setPixmap(self.images['grid'].scaled(120, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.grid_label.setPixmap(self.images['grid'].scaled(160, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.grid_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.hub_layout.addWidget(self.grid_label, 1, 6, 1, 1)  # Row 1, Col 6
+        self.grid_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.hub_layout.addWidget(self.grid_label, 1, 20, 1, 4)
         
-        # Right side - Battery (s4)
-        self.battery_status_label = QLabel()
-        self.battery_status_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.hub_layout.addWidget(self.battery_status_label, 2, 5, 1, 1)  # Row 3, Col 5
-        
+        # Right side - Battery
         self.battery_label = QLabel()
-        self.battery_label.setPixmap(self.images['battery'].scaled(120, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.battery_label.setPixmap(self.images['battery'].scaled(160, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.battery_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.hub_layout.addWidget(self.battery_label, 2, 6, 1, 1)  # Row 3, Col 6
+        self.battery_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.hub_layout.addWidget(self.battery_label, 2, 20, 1, 4)
         
-        # SoC Labels
+        # 4. Create status indicator widgets LAST (so they appear on top)
+        # Use adjacent columns that don't overlap with the transformer
+        
+        # PV Status indicator - move further left to avoid transformer overlap
+        self.pv_status_label = QLabel()
+        self.pv_status_label.setAlignment(Qt.AlignCenter)
+        self.pv_status_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.pv_status_label.setMinimumSize(80, 80)
+        self.hub_layout.addWidget(self.pv_status_label, 1, 4, 1, 2)
+        # Raise to front
+        self.pv_status_label.raise_()
+        
+        # EV Status indicator - move further left to avoid transformer overlap
+        self.ev_status_label = QLabel()
+        self.ev_status_label.setAlignment(Qt.AlignCenter)
+        self.ev_status_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.ev_status_label.setMinimumSize(80, 80)
+        self.hub_layout.addWidget(self.ev_status_label, 2, 4, 1, 2)
+        # Raise to front
+        self.ev_status_label.raise_()
+        
+        # Grid Status indicator - move further right to avoid transformer overlap
+        self.grid_status_label = QLabel()
+        self.grid_status_label.setAlignment(Qt.AlignCenter)
+        self.grid_status_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.grid_status_label.setMinimumSize(80, 80)
+        self.hub_layout.addWidget(self.grid_status_label, 1, 18, 1, 2)
+        # Raise to front
+        self.grid_status_label.raise_()
+        
+        # Battery Status indicator - move further right to avoid transformer overlap
+        self.battery_status_label = QLabel()
+        self.battery_status_label.setAlignment(Qt.AlignCenter)
+        self.battery_status_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.battery_status_label.setMinimumSize(80, 80)
+        self.hub_layout.addWidget(self.battery_status_label, 2, 18, 1, 2)
+        # Raise to front
+        self.battery_status_label.raise_()
+        
+        # SoC Labels 
         self.ev_soc_label = QLabel("EV SoC: 0%")
         self.ev_soc_label.setAlignment(Qt.AlignCenter)
-        self.ev_soc_label.setStyleSheet("font-weight: bold;")
-        self.hub_layout.addWidget(self.ev_soc_label, 4, 0, 1, 3)  # Row 4, Col 0-2
+        self.ev_soc_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 5px; background-color: rgba(255, 255, 255, 180);")
+        self.hub_layout.addWidget(self.ev_soc_label, 3, 0, 1, 6)
         
         self.battery_soc_label = QLabel("Battery SoC: 0%")
         self.battery_soc_label.setAlignment(Qt.AlignCenter)
-        self.battery_soc_label.setStyleSheet("font-weight: bold;")
-        self.hub_layout.addWidget(self.battery_soc_label, 4, 5, 1, 2)  # Row 4, Col 5-6
+        self.battery_soc_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 5px; background-color: rgba(255, 255, 255, 180);")
+        self.hub_layout.addWidget(self.battery_soc_label, 3, 18, 1, 6)
         
-        # Add a row spacer at the top to balance the layout
-        spacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Fixed)
-        self.hub_layout.addItem(spacer, 0, 3, 1, 2)
+        # Make all columns equal width to ensure proper distribution
+        for i in range(21):
+            self.hub_layout.setColumnStretch(i, 1)
+    
+    def showEvent(self, event):
+        """Handle show events to adjust container size"""
+        super().showEvent(event)
+        
+        # Adjust hub container to its minimum size
+        QTimer.singleShot(0, self.adjustContainerSize)
+    
+    def adjustContainerSize(self):
+        """Adjust container size to fit contents"""
+        self.hub_container.adjustSize()
     
     def update_pv_status(self, status):
         """Update PV panel status indicator"""
@@ -1018,20 +1068,25 @@ class EnergyHubWidget(DraggableWidget):
             label.movie().stop()
             label.setMovie(None)
         
+        # Make sure images don't get cut off by giving them appropriate margins
+        # The 80x80 size leaves room for the image within the 100x100 allocation
         if status == 0:  # Off
-            label.setPixmap(self.images['off'].scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        elif status == 1:  # O
-            label.setPixmap(self.images['on'].scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            label.setPixmap(self.images['off'].scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        elif status == 1:  # On
+            label.setPixmap(self.images['on'].scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         elif status == 2:  # Right direction
             movie = QMovie("right.gif")
             label.setMovie(movie)
-            movie.setScaledSize(QSize(100, 100))
+            movie.setScaledSize(QSize(80, 80))
             movie.start()
         elif status == 3:  # Left direction
             movie = QMovie("left.gif")
             label.setMovie(movie)
-            movie.setScaledSize(QSize(100, 100))
+            movie.setScaledSize(QSize(80, 80))
             movie.start()
+        
+        # Ensure the label is visible and on top
+        label.raise_()
     
     def update_ev_soc(self, soc):
         """Update EV state of charge display"""

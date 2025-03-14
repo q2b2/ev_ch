@@ -14,7 +14,7 @@ class UDPClient:
     A UDP client that receives and parses data from the EV Charging Station hardware.
     
     The data format is a CSV string with 9 values:
-    Vd,Id,Vdc,Vev,Vpv,Iev,Ipv,Ppv,Pev
+    Vd,Id,Vdc,Vev,Vpv,Iev,Ipv,Ppv,Pev,Pbettery,Pg,Qg,PF,Fg,THD,s1,s2,s3,s4,SoC_bettery,SoC_EV
     """
     
     def __init__(self, ip="0.0.0.0", port=5000, buffer_size=1024, history_length=1000):

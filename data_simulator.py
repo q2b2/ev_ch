@@ -322,9 +322,9 @@ class DataSimulator:
             # Generate simulated status data
             return {
                 "s1_status": random.randint(2, 2),
-                "s2_status": random.randint(2, 2),
-                "s3_status": random.randint(1, 1),
-                "s4_status": random.randint(3, 3),
+                "s2_status": random.randint(0, 0),
+                "s3_status": random.randint(0, 0),
+                "s4_status": random.randint(2, 2),
                 "ev_soc": random.uniform(10, 90),
                 "battery_soc": random.uniform(20, 80),
             }
