@@ -963,51 +963,74 @@ class TableWidget(DraggableWidget):
         # Emit signal with table type and values
         self.save_clicked.emit(self.table_type, input_values)
 
-
-class ButtonWidget(DraggableWidget):
-    """Widget for displaying and managing control buttons"""
+class FixedButtonWidget(QFrame):
+    """
+    Non-draggable, fixed-position widget for displaying buttons.
+    This widget has a visible border but minimal internal margins.
+    """
     
-    def __init__(self, parent=None, title="Controls", widget_id=None):
-        super().__init__(parent, widget_id)
+    def __init__(self, parent=None, widget_id=None, horizontal=True):
+        super().__init__(parent)
+        self.widget_id = widget_id
         
-        # Main layout
-        layout = QVBoxLayout()
+        # Set frame appearance - thin visible border
+        self.setFrameStyle(QFrame.Box | QFrame.Raised)
+        self.setLineWidth(2)  # Thin border
         
-        # Add title label
-        self.title_label = QLabel(title)
-        self.title_label.setAlignment(Qt.AlignCenter)
-        self.title_label.setStyleSheet("font-weight: bold; font-size: 14px;")
-        layout.addWidget(self.title_label)
+        # Explicitly disable size adjustments
+        self.setFixedSize(240, 40)  # Fixed size - will adjust this later
         
-        # Container for buttons
-        self.buttons_container = QWidget()
-        self.buttons_layout = QVBoxLayout(self.buttons_container)
-        layout.addWidget(self.buttons_container)
+        # Use horizontal layout for buttons by default
+        layout = QHBoxLayout(self) if horizontal else QVBoxLayout(self)
+        layout.setContentsMargins(3, 3, 3, 3)  # Absolute minimal margins
+        layout.setSpacing(30)  # Minimal space between buttons
         
         self.setLayout(layout)
         self.buttons = []
     
     def add_button(self, text, color="default", callback=None):
-        """Add a button to the container"""
+        """Add a button with minimal padding"""
         button = QPushButton(text)
-        button.setFont(QFont("Arial", 12))
+        button.setFont(QFont("Arial", 10))  # Smaller font size
         
-        # Apply styling based on color
+        # Set fixed button size
+        button_width = max(100, len(text) * 7)
+        button_height = 30
+        button.setFixedSize(button_width, button_height)
+        
+        # Set cursor to pointing hand when hovering over button
+        button.setCursor(Qt.PointingHandCursor)  # Add this line
+        
+        # Apply styling with no padding
         if color == "green":
-            button.setStyleSheet("background-color: #4CAF50; color: white; padding: 8px;")
+            button.setStyleSheet("""
+                background-color: #4CAF50; 
+                color: white; 
+                padding: 0px;
+                margin: 0px;
+                border: 1px solid #388E3C;
+            """)
         elif color == "red":
-            button.setStyleSheet("background-color: #F44336; color: white; padding: 8px;")
-        elif color == "blue":
-            button.setStyleSheet("background-color: #2196F3; color: white; padding: 8px;")
+            button.setStyleSheet("""
+                background-color: #F44336; 
+                color: white; 
+                padding: 0px;
+                margin: 0px;
+                border: 1px solid #D32F2F;
+            """)
         else:
-            button.setStyleSheet("padding: 8px;")
+            button.setStyleSheet("""
+                padding: 0px;
+                margin: 0px;
+                border: 1px solid #BDBDBD;
+            """)
         
         # Connect callback if provided
         if callback:
             button.clicked.connect(callback)
         
         # Add to layout and store reference
-        self.buttons_layout.addWidget(button)
+        self.layout().addWidget(button)
         self.buttons.append(button)
         
         return button
@@ -1019,7 +1042,7 @@ class ButtonWidget(DraggableWidget):
         return None
 
 class EnergyHubWidget(DraggableWidget):
-    """Widget for displaying the Smart Energy Hub visualization optimized for 948×344 pixels"""
+    """Widget for displaying the Smart Energy Hub visualization optimized for 948×290 pixels"""
     
     def __init__(self, parent=None, widget_id="energy_hub"):
         super().__init__(parent, widget_id)

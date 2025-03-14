@@ -71,8 +71,8 @@
     },
     "control_buttons": {
         "pos": {
-            "x": -2,
-            "y": 3
+            "x": 0,
+            "y": 76
         },
         "size": {
             "width": 353,

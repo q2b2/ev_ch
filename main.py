@@ -16,7 +16,7 @@ import argparse
 from data_simulator import DataSimulator
 from data_logger import DataLogger
 from config_manager import ConfigManager
-from ui_components import GraphWidget, GaugeWidget, TableWidget, ButtonWidget, EnergyHubWidget, GaugeGridWidget
+from ui_components import GraphWidget, GaugeWidget, TableWidget, FixedButtonWidget, EnergyHubWidget, GaugeGridWidget
 
 class EVChargingMonitor(QMainWindow):
     """Main application window for EV Charging Station Monitor"""
@@ -227,18 +227,19 @@ class EVChargingMonitor(QMainWindow):
         self.widgets["gauge_grid"] = self.gauge_grid
     
     def setup_control_buttons(self):
-        """Create control buttons for logging"""
-        # Create button container as a draggable widget
-        self.button_widget = ButtonWidget(self.central_widget, "Controls", "control_buttons")
-        self.button_widget.setGeometry(680, 520, 300, 200)
+        """Create fixed-position, non-draggable logging buttons"""
+        # Create non-draggable button container
+        self.button_widget = FixedButtonWidget(self.central_widget, widget_id="control_buttons")
         
         # Add buttons to the widget
-        self.button_widget.add_button("Start Logging", "green", self.start_logging)
-        self.button_widget.add_button("Stop Logging", "red", self.stop_logging)
-        self.button_widget.add_button("Save Layout", "blue", self.save_layout)
+        start_btn = self.button_widget.add_button("Start Logging", "green", self.start_logging)
+        stop_btn = self.button_widget.add_button("Stop Logging", "red", self.stop_logging)
         
         # Set initial state
-        self.button_widget.get_button(1).setEnabled(False)  # Stop button initially disabled
+        stop_btn.setEnabled(False)  # Stop button initially disabled
+        
+        # Position at y slightly above 117
+        self.button_widget.setGeometry(0, 110, 240, 40)
         
         self.button_widget.show()
         self.widgets["control_buttons"] = self.button_widget
