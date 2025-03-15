@@ -72,11 +72,11 @@
     "control_buttons": {
         "pos": {
             "x": 0,
-            "y": 76
+            "y": 67
         },
         "size": {
-            "width": 353,
-            "height": 200
+            "width": 240,
+            "height": 50
         }
     },
     "energy_hub": {

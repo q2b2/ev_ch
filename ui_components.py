@@ -10,163 +10,23 @@ import pyqtgraph as pg
 import numpy as np
 from PyQt5.QtGui import QColor, QPainter, QPen, QBrush, QFont, QMovie, QPixmap
 
-class DraggableWidget(QFrame):
-    """Base class for all draggable and resizable widgets"""
+class FixedWidget(QFrame):
+    """
+    Base class for fixed-position, non-draggable widgets.
+    This replaces the DraggableWidget class for applications where
+    widgets should stay in a fixed location.
+    """
     
     def __init__(self, parent=None, widget_id=None):
         super().__init__(parent)
         self.widget_id = widget_id
-        self.drag_position = None
-        self.setMouseTracking(True)
         
-        # Set frame and background
+        # Set frame and background - keep the visual style
         self.setFrameStyle(QFrame.Box | QFrame.Raised)
         self.setLineWidth(2)
         
-        # QSizePolicy to make widget resizable
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.setMinimumSize(200, 200)
-        
-        # Resize parameters
-        self.resize_border_width = 10     # Border width for resizing detection
-        self.resizing = False             # Flag for resizing mode
-        self.resize_edge = None           # Which edge is being resized
-        self.start_geometry = None        # Starting geometry for resize operations
-    
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            # Check if we're on an edge for resizing
-            edge = self._get_resize_edge(event.pos())
-            if edge:
-                self.resizing = True
-                self.resize_edge = edge
-                self.start_geometry = self.geometry()
-                self.setCursor(self._get_cursor_for_edge(edge))
-            else:
-                # Regular drag operation
-                self.drag_position = event.globalPos() - self.frameGeometry().topLeft()
-            event.accept()
-    
-    def mouseMoveEvent(self, event):
-        if not self.resizing:
-            # Check if mouse is near border and set appropriate cursor
-            edge = self._get_resize_edge(event.pos())
-            if edge:
-                self.setCursor(self._get_cursor_for_edge(edge))
-            else:
-                self.setCursor(Qt.ArrowCursor)
-            
-            # Handle dragging
-            if event.buttons() == Qt.LeftButton and self.drag_position:
-                self.move(event.globalPos() - self.drag_position)
-                # Notify parent of movement
-                if hasattr(self.parent(), "widget_moved"):
-                    self.parent().widget_moved()
-                event.accept()
-        else:
-            # Handle resizing
-            self._handle_resize(event.globalPos())
-            # Notify parent of resize
-            if hasattr(self.parent(), "widget_moved"):
-                self.parent().widget_moved()
-            event.accept()
-    
-    def mouseReleaseEvent(self, event):
-        self.drag_position = None
-        self.resizing = False
-        self.resize_edge = None
-        self.start_geometry = None
-        # Reset cursor
-        self.setCursor(Qt.ArrowCursor)
-    
-    def _get_resize_edge(self, pos):
-        """Determine if the position is on an edge for resizing"""
-        x, y = pos.x(), pos.y()
-        w, h = self.width(), self.height()
-        border = self.resize_border_width
-        
-        # Check corners first (they take priority)
-        if x < border and y < border:
-            return "top-left"
-        elif x > w - border and y < border:
-            return "top-right"
-        elif x < border and y > h - border:
-            return "bottom-left"
-        elif x > w - border and y > h - border:
-            return "bottom-right"
-        
-        # Then check edges
-        elif x < border:
-            return "left"
-        elif x > w - border:
-            return "right"
-        elif y < border:
-            return "top"
-        elif y > h - border:
-            return "bottom"
-        
-        return None
-    
-    def _get_cursor_for_edge(self, edge):
-        """Return the appropriate cursor for the given edge"""
-        if edge in ["top-left", "bottom-right"]:
-            return Qt.SizeFDiagCursor
-        elif edge in ["top-right", "bottom-left"]:
-            return Qt.SizeBDiagCursor
-        elif edge in ["left", "right"]:
-            return Qt.SizeHorCursor
-        elif edge in ["top", "bottom"]:
-            return Qt.SizeVerCursor
-        return Qt.ArrowCursor
-    
-    def _handle_resize(self, global_pos):
-        """Handle resize operation based on the active edge"""
-        if not self.resize_edge or not self.start_geometry:
-            return
-        
-        # Convert global position to parent coordinates
-        parent_pos = self.parent().mapFromGlobal(global_pos)
-        
-        # Get original geometry
-        orig = self.start_geometry
-        new_geom = orig  # Start with original
-        min_width = self.minimumWidth()
-        min_height = self.minimumHeight()
-        
-        # Calculate new geometry based on edge being dragged
-        if "left" in self.resize_edge:
-            # Left edge moving - adjust x position and width
-            dx = parent_pos.x() - orig.x()
-            new_width = max(min_width, orig.width() - dx)
-            if new_width == min_width:
-                dx = orig.width() - min_width
-            new_geom.setX(orig.x() + dx)
-            new_geom.setWidth(orig.width() - dx)
-        
-        if "right" in self.resize_edge:
-            # Right edge moving - adjust width
-            new_width = max(min_width, parent_pos.x() - orig.x())
-            new_geom.setWidth(new_width)
-        
-        if "top" in self.resize_edge:
-            # Top edge moving - adjust y position and height
-            dy = parent_pos.y() - orig.y()
-            new_height = max(min_height, orig.height() - dy)
-            if new_height == min_height:
-                dy = orig.height() - min_height
-            new_geom.setY(orig.y() + dy)
-            new_geom.setHeight(orig.height() - dy)
-        
-        if "bottom" in self.resize_edge:
-            # Bottom edge moving - adjust height
-            new_height = max(min_height, parent_pos.y() - orig.y())
-            new_geom.setHeight(new_height)
-        
-        # Apply new geometry
-        self.setGeometry(new_geom)
-        
-        # Force update of the widget contents
-        self.update()
+        # Set minimum size
+        self.setMinimumSize(100, 100)
 
 class ColorLabel(QLabel):
     """
@@ -195,7 +55,7 @@ class ColorLabel(QLabel):
         super().paintEvent(event)
 
 
-class GraphWidget(DraggableWidget):
+class GraphWidget(FixedWidget):
     """
     Widget for displaying real-time graphs with centered title and 
     right-aligned horizontal legends.
@@ -290,7 +150,8 @@ class GraphWidget(DraggableWidget):
         """
         # Set the widget title
         self.title_label.setText("Grid Voltage")
-        
+        self.title_label.setStyleSheet("font-weight: bold; color: black; font-size: 16px;")
+
         # Configure the plot widget
         self.plot_widget.setTitle("")  # Clear default title (we use our custom title)
         self.plot_widget.setLabel('left', "Voltage", units='V')  # Y-axis label
@@ -331,7 +192,8 @@ class GraphWidget(DraggableWidget):
         """
         # Set the widget title
         self.title_label.setText("Grid Current")
-        
+        self.title_label.setStyleSheet("font-weight: bold; color: black; font-size: 16px;")
+
         # Configure the plot widget
         self.plot_widget.setTitle("")  # Clear default title
         self.plot_widget.setLabel('left', "Current", units='A')  # Y-axis label
@@ -369,7 +231,8 @@ class GraphWidget(DraggableWidget):
         """
         # Set the widget title
         self.title_label.setText("Power Distribution")
-        
+        self.title_label.setStyleSheet("font-weight: bold; color: black; font-size: 16px;")
+
         # Configure the plot widget
         self.plot_widget.setTitle("")  # Clear default title
         self.plot_widget.setLabel('left', "Power", units='W')    # Y-axis label
@@ -425,7 +288,7 @@ class GraphWidget(DraggableWidget):
             self.lines[2].setData(time_data, p_ev)
             self.lines[3].setData(time_data, p_battery)
 
-class GaugeWidget(DraggableWidget):
+class GaugeWidget(FixedWidget):
     """Widget for displaying gauge measurements"""
     
     def __init__(self, parent=None, title="Gauge", min_value=0, max_value=100, 
@@ -646,52 +509,98 @@ class GaugeGridWidget(QFrame):
         
         return gauge
 
-class TableWidget(DraggableWidget):
-    """Widget for displaying editable parameter tables"""
+class TableWidget(FixedWidget):
+    """Widget for displaying editable parameter tables with optimized layout and appearance"""
     
     save_clicked = pyqtSignal(str, dict)  # Signal to emit when save button is clicked
     
     def __init__(self, parent=None, title="Parameters", widget_id=None):
         super().__init__(parent, widget_id)
         
-        # Main layout
-        layout = QVBoxLayout()
+        # Remove the frame from the main widget to maximize space
+        self.setFrameStyle(QFrame.Box | QFrame.Raised)
+        self.setLineWidth(2)
         
-        # Adjust overall widget margins here (left, top, right, bottom)
-        layout.setContentsMargins(0, 0, 0, 0)  # <-- WIDGET MARGINS HERE
-
-        # Adjust spacing between widgets inside the layout
-        layout.setSpacing(0)  # <-- SPACING BETWEEN COMPONENTS (title, table, button)
-
-        # Add title label
+        # Explicitly disable scrollbars - ADD THIS LINE
+        self.table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        
+        # Main layout with minimal margins
+        layout = QVBoxLayout()
+        layout.setContentsMargins(5, 5, 5, 5)  # Minimal margins
+        layout.setSpacing(2)  # Minimal spacing between components
+        
+        # Title with proper size
         self.title_label = QLabel(title)
         self.title_label.setAlignment(Qt.AlignCenter)
-        self.title_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        self.title_label.setStyleSheet("font-weight: bold; font-size: 16px;")  # 16px as requested
+        self.title_label.setFixedHeight(30)  # Fixed height for title
         layout.addWidget(self.title_label)
         
-        # Create table
+        # Create table with optimal settings
         self.table = QTableWidget()
         self.table.setColumnCount(3)
         self.table.setHorizontalHeaderLabels(["Parameter", "Value", "Input"])
         
-        # Configure table for auto-fitting
-        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)  # Parameter column
-        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)  # Value column
-        self.table.horizontalHeader().setStretchLastSection(True)  # Input column stretches
+        # Center-align the headers
+        self.table.horizontalHeader().setDefaultAlignment(Qt.AlignCenter)
         
-        # Additional table settings for better sizing
+        # Configure fixed column widths based on container size
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        
+        # Set header style
+        self.table.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: #E0E0E0; font-weight: bold; }")
+        
+        # Additional table settings
         self.table.setVerticalScrollMode(QTableWidget.ScrollPerPixel)
         self.table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
-        self.table.verticalHeader().hide()  # Remove row numbers for cleaner look
+        self.table.verticalHeader().hide()  # Remove row numbers
         self.table.setShowGrid(True)
-        self.table.setAlternatingRowColors(True)  # Improves readability
+        self.table.setAlternatingRowColors(True)
+        
+        # Center all text in the table
+        self.table.setStyleSheet("""
+            QTableWidget {
+                gridline-color: #D0D0D0;
+                background-color: white;
+                font-size: 15px;  /* 10px as requested */
+            }
+            QTableWidget::item {
+                padding: 0px;
+                margin: 0px;
+                border: none;
+                text-align: center;
+            }
+        """)
         
         layout.addWidget(self.table)
         
-        # Save button
+        # Save button with better styling
         self.save_button = QPushButton("Save")
+        self.save_button.setFixedHeight(25)  # Fixed height for button
+        self.save_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                font-weight: bold;
+                padding: 0px 10px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
         self.save_button.clicked.connect(self.on_save_clicked)
-        layout.addWidget(self.save_button)
+        self.save_button.setCursor(Qt.PointingHandCursor)  # Hand cursor on hover
+        
+        # Button container for centering
+        button_container = QWidget()
+        button_layout = QHBoxLayout(button_container)
+        button_layout.setContentsMargins(0, 0, 0, 0)
+        button_layout.addStretch()
+        button_layout.addWidget(self.save_button)
+        button_layout.addStretch()
+        
+        layout.addWidget(button_container)
         
         self.setLayout(layout)
         self.table_type = None  # Will be set during setup
@@ -712,30 +621,55 @@ class TableWidget(DraggableWidget):
         
         self.table.setRowCount(len(parameters))
         
+        # Calculate and set optimal column widths
+        table_width = self.width() - 10  # Account for margins
+        self.table.setColumnWidth(0, int(table_width * 0.35))  # Parameter column
+        self.table.setColumnWidth(1, int(table_width * 0.25))  # Value column
+        self.table.setColumnWidth(2, int(table_width * 0.40))  # Input column
+        
+        # Set uniform row height
+        row_height = 30
+        
         # Populate table
         for i, param in enumerate(parameters):
-            # Parameter name
-            self.table.setItem(i, 0, QTableWidgetItem(param["name"]))
+            # Parameter name - center aligned
+            item = QTableWidgetItem(param["name"])
+            item.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(i, 0, item)
             
-            # Current value
+            # Current value - center aligned
             value_item = QTableWidgetItem(str(param["default"]))
+            value_item.setTextAlignment(Qt.AlignCenter)
             self.table.setItem(i, 1, value_item)
             
-            # Input field
+            # Input field - custom centered widget
             if param["type"] == "readonly":
                 input_widget = QLabel("--")
                 input_widget.setAlignment(Qt.AlignCenter)
+                input_widget.setStyleSheet("background-color: #F0F0F0; color: #808080;")
             else:
                 input_widget = QLineEdit("0")
+                input_widget.setAlignment(Qt.AlignCenter)
+                input_widget.setStyleSheet("padding: 2px; margin: 1px; font-size: 15px;")
             
-            self.table.setCellWidget(i, 2, input_widget)
-
-        self.table.resizeColumnsToContents()
-
-        # Apply fonts - adjust sizes as needed
-        self.set_table_fonts(header_size=10, content_size=10, input_size=10, title_size=15)
-
-        self.resize_table_to_contents()
+            # Create a container widget to center the input control
+            container = QWidget()
+            container_layout = QHBoxLayout(container)
+            container_layout.setContentsMargins(2, 1, 2, 1)  # Minimal margins
+            container_layout.addWidget(input_widget)
+            
+            self.table.setCellWidget(i, 2, container)
+            self.table.setRowHeight(i, row_height)
+        
+        # Calculate optimal table height and resize
+        header_height = self.table.horizontalHeader().height()
+        total_row_height = row_height * len(parameters)
+        
+        # Calculate available space for the table
+        available_height = self.height() - self.title_label.height() - self.save_button.height() - 20
+        
+        # Set table height to fit exactly
+        self.table.setFixedHeight(min(total_row_height + header_height, available_height))
     
     def setup_ev_charging_setting_table(self):
         """Configure table for EV Charging Setting"""
@@ -752,29 +686,59 @@ class TableWidget(DraggableWidget):
         
         self.table.setRowCount(len(parameters))
         
+        # Calculate and set optimal column widths
+        table_width = self.width() - 10  # Account for margins
+        self.table.setColumnWidth(0, int(table_width * 0.35))  # Parameter column
+        self.table.setColumnWidth(1, int(table_width * 0.25))  # Value column
+        self.table.setColumnWidth(2, int(table_width * 0.40))  # Input column
+        
+        # Set uniform row height
+        row_height = 30
+        
         # Populate table
         for i, param in enumerate(parameters):
-            # Parameter name
-            self.table.setItem(i, 0, QTableWidgetItem(param["name"]))
+            # Parameter name - center aligned
+            item = QTableWidgetItem(param["name"])
+            item.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(i, 0, item)
             
-            # Current value
+            # Current value - center aligned
             if param["type"] == "radio":
                 value = "On" if param["default"] else "Off"
             else:
                 value = str(param["default"])
-            self.table.setItem(i, 1, QTableWidgetItem(value))
             
-            # Input field
+            value_item = QTableWidgetItem(value)
+            value_item.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(i, 1, value_item)
+            
+            # Input field - custom centered widget
             if param["type"] == "number":
                 input_widget = QLineEdit("0")
-                self.table.setCellWidget(i, 2, input_widget)
+                input_widget.setAlignment(Qt.AlignCenter)
+                input_widget.setStyleSheet("padding: 2px; margin: 1px; font-size: 15px;")
+                
+                container = QWidget()
+                container_layout = QHBoxLayout(container)
+                container_layout.setContentsMargins(2, 1, 2, 1)
+                container_layout.addWidget(input_widget)
+                
+                self.table.setCellWidget(i, 2, container)
             elif param["type"] == "radio":
                 radio_widget = QWidget()
                 radio_layout = QHBoxLayout(radio_widget)
+                radio_layout.setContentsMargins(2, 0, 2, 0)
+                radio_layout.setSpacing(5)
                 
                 # Create radio button group
                 radio_on = QRadioButton("On")
                 radio_off = QRadioButton("Off")
+                
+                # Center the radio buttons
+                radio_layout.addStretch(1)
+                radio_layout.addWidget(radio_on)
+                radio_layout.addWidget(radio_off)
+                radio_layout.addStretch(1)
                 
                 # Set default selection
                 if param["default"]:
@@ -782,24 +746,27 @@ class TableWidget(DraggableWidget):
                 else:
                     radio_off.setChecked(True)
                 
-                # Add to group and layout
+                # Add to group
                 button_group = QButtonGroup(radio_widget)
                 button_group.addButton(radio_on)
                 button_group.addButton(radio_off)
-                
-                radio_layout.addWidget(radio_on)
-                radio_layout.addWidget(radio_off)
                 
                 # Store reference to button group
                 self.radio_groups[param["name"]] = button_group
                 
                 self.table.setCellWidget(i, 2, radio_widget)
+            
+            self.table.setRowHeight(i, row_height)
         
-        self.table.resizeColumnsToContents()
+        # Calculate optimal table height and resize
+        header_height = self.table.horizontalHeader().height()
+        total_row_height = row_height * len(parameters)
         
-        # Apply fonts - adjust sizes as needed
-        self.set_table_fonts(header_size=9, content_size=9, input_size=9, title_size=16)
-        self.resize_table_to_contents()
+        # Calculate available space for the table
+        available_height = self.height() - self.title_label.height() - self.save_button.height() - 20
+        
+        # Set table height to fit exactly
+        self.table.setFixedHeight(min(total_row_height + header_height, available_height))
     
     def setup_grid_settings_table(self):
         """Configure table for Grid Settings"""
@@ -817,100 +784,55 @@ class TableWidget(DraggableWidget):
         
         self.table.setRowCount(len(parameters))
         
+        # Calculate and set optimal column widths
+        table_width = self.width() - 10  # Account for margins
+        self.table.setColumnWidth(0, int(table_width * 0.35))  # Parameter column
+        self.table.setColumnWidth(1, int(table_width * 0.25))  # Value column
+        self.table.setColumnWidth(2, int(table_width * 0.40))  # Input column
+        
+        # Set uniform row height
+        row_height = 30
+        
         # Populate table
         for i, param in enumerate(parameters):
-            # Parameter name
-            self.table.setItem(i, 0, QTableWidgetItem(param["name"]))
+            # Parameter name - center aligned
+            item = QTableWidgetItem(param["name"])
+            item.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(i, 0, item)
             
-            # Current value
-            self.table.setItem(i, 1, QTableWidgetItem(str(param["default"])))
+            # Current value - center aligned
+            value_item = QTableWidgetItem(str(param["default"]))
+            value_item.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(i, 1, value_item)
             
-            # Input field
+            # Input field - centered
             input_widget = QLineEdit("0")
-            self.table.setCellWidget(i, 2, input_widget)
+            input_widget.setAlignment(Qt.AlignCenter)
+            input_widget.setStyleSheet("padding: 2px; margin: 1px; font-size: 15px;")
+            
+            container = QWidget()
+            container_layout = QHBoxLayout(container)
+            container_layout.setContentsMargins(2, 1, 2, 1)
+            container_layout.addWidget(input_widget)
+            
+            self.table.setCellWidget(i, 2, container)
+            self.table.setRowHeight(i, row_height)
         
-        self.table.resizeColumnsToContents()
-
-        # Apply fonts - adjust sizes as needed
-        self.set_table_fonts(header_size=12, content_size=11, input_size=11, title_size=16)
-
-        self.resize_table_to_contents()
-    
-    def resize_table_to_contents(self):
-        """Remove extra vertical space from the table"""
-        self.table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        # Calculate optimal table height and resize
         header_height = self.table.horizontalHeader().height()
-        row_total_height = 0
-        for i in range(self.table.rowCount()):
-            row_total_height += self.table.rowHeight(i)
-        self.table.setFixedHeight(header_height + row_total_height + 2)
-
-    def set_table_fonts(self, header_size=12, content_size=11, input_size=11, title_size=14):
-        """Set font sizes for different parts of the table
+        total_row_height = row_height * len(parameters)
         
-        Parameters:
-            header_size (int): Font size for column headers
-            content_size (int): Font size for table cell content
-            input_size (int): Font size for input widgets
-            title_size (int): Font size for the table title
-        """
-
-        # Title font
-        self.title_label.setStyleSheet(f"font-weight: bold; font-size: {title_size}px;")
-
-        # Header font
-        header_font = QFont()
-        header_font.setPointSize(header_size)
-        header_font.setBold(True)
-        self.table.horizontalHeader().setFont(header_font)
+        # Calculate available space for the table
+        available_height = self.height() - self.title_label.height() - self.save_button.height() - 20
         
-        # Content font for cells
-        content_font = QFont()
-        content_font.setPointSize(content_size)
-        self.table.setFont(content_font)
-        
-        # Apply font to all existing cell items explicitly
-        for row in range(self.table.rowCount()):
-            for col in range(2):  # Apply to parameter and value columns (0 and 1)
-                item = self.table.item(row, col)
-                if item:
-                    item_font = QFont()
-                    item_font.setPointSize(content_size)
-                    item.setFont(item_font)
-        
-        # Apply to all input widgets in column 2
-        for row in range(self.table.rowCount()):
-            widget = self.table.cellWidget(row, 2)
-            if isinstance(widget, QLineEdit):
-                # For simple line edits
-                input_font = QFont()
-                input_font.setPointSize(input_size)
-                widget.setFont(input_font)
-            elif isinstance(widget, QLabel):
-                # For read-only labels
-                input_font = QFont()
-                input_font.setPointSize(input_size)
-                widget.setFont(input_font)
-            elif isinstance(widget, QWidget):
-                # For composite widgets like radio button containers
-                input_font = QFont()
-                input_font.setPointSize(input_size)
-                # Apply to all child widgets that accept text
-                for child in widget.findChildren((QRadioButton, QLabel, QLineEdit)):
-                    child.setFont(input_font)
+        # Set table height to fit exactly
+        self.table.setFixedHeight(min(total_row_height + header_height, available_height))
 
     def update_values(self, data_dict):
         """Update the values column in the table"""
-
-        if self.table_type == "charging_setting":
-            value_keys = ["PV power", "EV power", "Battery power", "V_dc"]
-        elif self.table_type == "ev_charging_setting":
-            value_keys = ["EV voltage", "EV SoC", "Demand Response", "V2G"]
-        elif self.table_type == "grid_settings":
-            value_keys = ["Vg_rms", "Ig_rms", "Frequency", "THD", "Power factor"]
-        else:
+        if not data_dict:
             return
-        
+            
         for row in range(self.table.rowCount()):
             param_name = self.table.item(row, 0).text()
             if param_name in data_dict:
@@ -921,20 +843,10 @@ class TableWidget(DraggableWidget):
                     # Format numbers to two decimal places
                     value = f"{value:.2f}"
                     
-                self.table.item(row, 1).setText(str(value))
-        
-        # Reapply fonts since new text might have been added
-        for row in range(self.table.rowCount()):
-            item = self.table.item(row, 1)  # Value column
-            if item:
-                font = item.font()
-                # Maintain current font size
-                font_size = font.pointSize() if font.pointSize() > 0 else 11
-                font.setPointSize(font_size)
-                item.setFont(font)
-
-        # Adjust row heights after updating data
-        self.table.resizeRowsToContents()
+                # Update with center alignment
+                value_item = QTableWidgetItem(str(value))
+                value_item.setTextAlignment(Qt.AlignCenter)
+                self.table.setItem(row, 1, value_item)
     
     def on_save_clicked(self):
         """Handle save button click - collect input values and emit signal"""
@@ -1041,7 +953,7 @@ class FixedButtonWidget(QFrame):
             return self.buttons[index]
         return None
 
-class EnergyHubWidget(DraggableWidget):
+class EnergyHubWidget(FixedWidget):
     """Widget for displaying the Smart Energy Hub visualization optimized for 948×290 pixels"""
     
     def __init__(self, parent=None, widget_id="energy_hub"):
@@ -1193,12 +1105,12 @@ class EnergyHubWidget(DraggableWidget):
         # SoC Labels 
         self.ev_soc_label = QLabel("EV SoC: 0%")
         self.ev_soc_label.setAlignment(Qt.AlignCenter)
-        self.ev_soc_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 5px; background-color: rgba(255, 255, 255, 180);")
+        self.ev_soc_label.setStyleSheet("font-weight: bold; font-size: 16px; margin-top: 5px; background-color: rgba(255, 255, 255, 180);")
         self.hub_layout.addWidget(self.ev_soc_label, 3, 0, 1, 6)
         
         self.battery_soc_label = QLabel("Battery SoC: 0%")
         self.battery_soc_label.setAlignment(Qt.AlignCenter)
-        self.battery_soc_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 5px; background-color: rgba(255, 255, 255, 180);")
+        self.battery_soc_label.setStyleSheet("font-weight: bold; font-size: 16px; margin-top: 5px; background-color: rgba(255, 255, 255, 180);")
         self.hub_layout.addWidget(self.battery_soc_label, 3, 18, 1, 6)
         
         # Make all columns equal width to ensure proper distribution

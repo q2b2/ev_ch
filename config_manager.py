@@ -33,27 +33,6 @@ class ConfigManager:
         self.settings.endGroup()
         return pos, size
     
-    def save_all_configs(self, widget_dict):
-        """Save configurations for all widgets to file"""
-        config_data = {}
-        
-        for widget_id, widget in widget_dict.items():
-            config_data[widget_id] = {
-                "pos": {
-                    "x": widget.pos().x(),
-                    "y": widget.pos().y()
-                },
-                "size": {
-                    "width": widget.size().width(),
-                    "height": widget.size().height()
-                }
-            }
-        
-        with open(self.config_file, 'w') as f:
-            json.dump(config_data, f, indent=4)
-        
-        return True
-    
     def load_all_configs(self):
         """Load configurations for all widgets from file"""
         if not os.path.exists(self.config_file):

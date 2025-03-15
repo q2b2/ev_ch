@@ -43,11 +43,8 @@ class EVChargingMonitor(QMainWindow):
         self.timer.timeout.connect(self.update_data)
         self.timer.start(300) # Update interval in milliseconds (100ms = 10Hz)
         
-        # Apply saved configurations
-        self.apply_saved_layouts()
-        
-        # Flag to track if layout has changed
-        self.layout_changed = False
+        # Apply fixed positions to all widgets
+        self.apply_fixed_positions()
     
     def setupUI(self):
         """Set up the main UI components"""
@@ -141,21 +138,18 @@ class EVChargingMonitor(QMainWindow):
         """Create and configure graph widgets"""
         # Voltage graph
         self.voltage_graph = GraphWidget(self.central_widget, "Voltage Graph", "voltage_graph")
-        self.voltage_graph.setGeometry(20, 20, 400, 280)
         self.voltage_graph.setup_voltage_graph()
         self.voltage_graph.show()
         self.widgets["voltage_graph"] = self.voltage_graph
         
         # Current graph
         self.current_graph = GraphWidget(self.central_widget, "Current Graph", "current_graph")
-        self.current_graph.setGeometry(430, 20, 400, 280)
         self.current_graph.setup_current_graph()
         self.current_graph.show()
         self.widgets["current_graph"] = self.current_graph
         
         # Power graph
         self.power_graph = GraphWidget(self.central_widget, "Power Graph", "power_graph")
-        self.power_graph.setGeometry(840, 20, 400, 280)
         self.power_graph.setup_power_graph()
         self.power_graph.show()
         self.widgets["power_graph"] = self.power_graph
@@ -164,27 +158,27 @@ class EVChargingMonitor(QMainWindow):
         """Create and configure table widgets"""
         # Charging Setting table
         self.charging_setting_table = TableWidget(self.central_widget, "Charging Setting", "charging_table")
-        self.charging_setting_table.setGeometry(20, 310, 300, 200)
+        # Initial position and size will be set by apply_fixed_positions
         self.charging_setting_table.setup_charging_setting_table()
         self.charging_setting_table.save_clicked.connect(self.on_table_save)
-        self.charging_setting_table.show()
         self.widgets["charging_table"] = self.charging_setting_table
         
         # EV Charging Setting table
         self.ev_charging_table = TableWidget(self.central_widget, "EV Charging Setting", "ev_charging_table")
-        self.ev_charging_table.setGeometry(330, 310, 300, 200)
         self.ev_charging_table.setup_ev_charging_setting_table()
         self.ev_charging_table.save_clicked.connect(self.on_table_save)
-        self.ev_charging_table.show()
         self.widgets["ev_charging_table"] = self.ev_charging_table
         
         # Grid Settings table
         self.grid_settings_table = TableWidget(self.central_widget, "Grid Settings", "grid_settings_table")
-        self.grid_settings_table.setGeometry(640, 310, 300, 250)
         self.grid_settings_table.setup_grid_settings_table()
         self.grid_settings_table.save_clicked.connect(self.on_table_save)
-        self.grid_settings_table.show()
         self.widgets["grid_settings_table"] = self.grid_settings_table
+        
+        # Show all tables after they're set up
+        self.charging_setting_table.show()
+        self.ev_charging_table.show()
+        self.grid_settings_table.show()
     
     def setup_gauges(self):
         """
@@ -227,7 +221,7 @@ class EVChargingMonitor(QMainWindow):
         self.widgets["gauge_grid"] = self.gauge_grid
     
     def setup_control_buttons(self):
-        """Create fixed-position, non-draggable logging buttons"""
+        """Create fixed-position logging buttons at the position from config"""
         # Create non-draggable button container
         self.button_widget = FixedButtonWidget(self.central_widget, widget_id="control_buttons")
         
@@ -238,8 +232,7 @@ class EVChargingMonitor(QMainWindow):
         # Set initial state
         stop_btn.setEnabled(False)  # Stop button initially disabled
         
-        # Position at y slightly above 117
-        self.button_widget.setGeometry(0, 110, 240, 40)
+        # It will be positioned later by the apply_fixed_positions method
         
         self.button_widget.show()
         self.widgets["control_buttons"] = self.button_widget
@@ -247,7 +240,6 @@ class EVChargingMonitor(QMainWindow):
     def setup_energy_hub(self):
         """Create and configure the Smart Energy Hub widget"""
         self.energy_hub = EnergyHubWidget(self.central_widget, "energy_hub")
-        self.energy_hub.setGeometry(950, 310, 400, 300)  # Adjust position and size as needed
         self.energy_hub.show()
         self.widgets["energy_hub"] = self.energy_hub
 
@@ -317,28 +309,45 @@ class EVChargingMonitor(QMainWindow):
         
         print(f"Data logged to: {log_file}")
     
-    def save_layout(self):
-        """Save the current layout configuration"""
-        self.config_manager.save_all_configs(self.widgets)
-        self.layout_changed = False
-        print("Layout configuration saved")
-    
-    def widget_moved(self):
-        """Called when a widget is moved or resized"""
-        self.layout_changed = True
-    
-    def apply_saved_layouts(self):
-        """Apply saved layout configurations to widgets"""
+    def apply_fixed_positions(self):
+        """
+        Apply fixed positions and sizes to all widgets from the layout configuration file.
+        This ensures all widgets are positioned exactly as specified.
+        """
+        # Load the configuration file
         configs = self.config_manager.load_all_configs()
         
-        # If no saved configs, use default layout
+        # Exit if no configurations found
         if not configs:
+            print("No layout configuration file found.")
             return
-            
-        # Apply configs to widgets
+        
+        # Apply position and size to each widget
         for widget_id, widget in self.widgets.items():
             if widget_id in configs:
-                self.config_manager.apply_config_to_widget(widget, widget_id, configs)
+                config = configs[widget_id]
+                
+                # Extract position and size from config
+                x = config["pos"]["x"]
+                y = config["pos"]["y"]
+                width = config["size"]["width"]
+                height = config["size"]["height"]
+                
+                # Apply fixed position and size
+                widget.setGeometry(x, y, width, height)
+                widget.setFixedSize(width, height)
+                
+                # Special handling for table widgets to refresh layouts
+                if isinstance(widget, TableWidget):
+                    # Force tables to recalculate their layouts with the new size
+                    if widget_id == "charging_table":
+                        widget.setup_charging_setting_table()
+                    elif widget_id == "ev_charging_table":
+                        widget.setup_ev_charging_setting_table()
+                    elif widget_id == "grid_settings_table":
+                        widget.setup_grid_settings_table()
+                
+                print(f"Fixed widget {widget_id} at position ({x}, {y}) with size ({width} × {height})")
     
     # Add this to the closeEvent method to ensure clean shutdown:
     def closeEvent(self, event):
