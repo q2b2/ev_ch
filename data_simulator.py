@@ -59,7 +59,7 @@ class DataSimulator:
         self.power_factor = 0.99
         
         # Grid power parameters as mentioned by mentor
-        self.p_grid = self.vg_rms * self.ig_rms * self.power_factor  # Active power
+        self.p_grid = np.sqrt(3)*self.vg_rms * self.ig_rms * self.power_factor  # Active power
         self.q_grid = self.vg_rms * self.ig_rms * np.sin(np.arccos(self.power_factor))  # Reactive power
         # S_grid = sqrt(P_grid^2 + Q_grid^2) - this is calculated when needed
         
@@ -83,7 +83,7 @@ class DataSimulator:
             else:
                 print("UDP client started successfully.")
     
-    def get_time_data(self, n_points=8):
+    def get_time_data(self, n_points=300):
         """
         Generate time data for x-axis.
         
@@ -98,9 +98,9 @@ class DataSimulator:
             Array of time values.
         """
         current_time = time.time() - self.time_start
-        return np.linspace(current_time - 1, current_time, n_points)
+        return np.linspace(current_time - 0.1, current_time, n_points)
     
-    def get_voltage_data(self, n_points=8):
+    def get_voltage_data(self, n_points=300):
         """
         Get three-phase voltage data.
         
@@ -135,7 +135,7 @@ class DataSimulator:
             
             return t, va, vb, vc
     
-    def get_current_data(self, n_points=8):
+    def get_current_data(self, n_points=300):
         """
         Get three-phase current data.
         
@@ -171,7 +171,7 @@ class DataSimulator:
             
             return t, ia, ib, ic
     
-    def get_power_data(self, n_points=8):
+    def get_power_data(self, n_points=300):
         """
         Get power data for grid, PV, EV, and battery.
         
@@ -472,7 +472,7 @@ class DataSimulator:
                 # If we're updating power-related parameters, recalculate grid power
                 if parameter in ["vg_rms", "ig_rms", "power_factor"]:
                     # Update grid power parameters
-                    self.p_grid = self.vg_rms * self.ig_rms * self.power_factor
+                    self.p_grid = np.sqrt(3)* self.vg_rms * self.ig_rms * self.power_factor
                     self.q_grid = self.vg_rms * self.ig_rms * np.sin(np.arccos(self.power_factor))
                 
                 print(f"Updated {parameter} to {value}")

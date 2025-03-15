@@ -82,7 +82,7 @@ def send_test_packets(ip='127.0.0.1', port=5000, interval=0.1, duration=60):
             THD = 3.0 + random.uniform(-0.5, 0.5)  # THD (%)
             
             # Status indicators (0=Off, 1=Standby, 2=Active, 3=Fault)
-            s1 = 2 if Ppv > 100 else 0  # PV Status: Active if generating power
+            s1 = 0 if Ppv > 1 else 0  # PV Status: Active if generating power
             s2 = 2 if abs(Pev) > 100 else 0  # EV Status: Active if charging/discharging
             s3 = 2  # Grid Status: Typically active
             s4 = 2 if abs(Pbattery) > 100 else 0  # Battery Status: Active if in use

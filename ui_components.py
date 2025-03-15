@@ -46,7 +46,7 @@ class ColorLabel(QLabel):
         
         # Draw color line indicator - this creates the colored line before the text
         pen = QPen(QColor(*self.color))
-        pen.setWidth(2)  # Line thickness - increase for thicker indicator
+        pen.setWidth(4)  # Line thickness - increase for thicker indicator
         painter.setPen(pen)
         # Draw horizontal line at vertical center of label
         painter.drawLine(2, self.height() // 2, 12, self.height() // 2)
@@ -154,8 +154,10 @@ class GraphWidget(FixedWidget):
 
         # Configure the plot widget
         self.plot_widget.setTitle("")  # Clear default title (we use our custom title)
-        self.plot_widget.setLabel('left', "Voltage", units='V')  # Y-axis label
-        self.plot_widget.setLabel('bottom', "Time", units='s')   # X-axis label
+        voltage_axis = self.plot_widget.getAxis("left")
+        voltage_axis.setLabel("Voltage", units="V", **{'font-size': '10pt', 'font-weight': 'bold'})
+        time_axis = self.plot_widget.getAxis("bottom")
+        time_axis.setLabel("Time", units="s", **{'font-size': '10pt', 'font-weight': 'bold'})
         self.plot_widget.setYRange(-250, 250)  # Set Y-axis limits
         
         # Clear any existing legend items from previous configurations
@@ -173,7 +175,7 @@ class GraphWidget(FixedWidget):
         for i, name in enumerate(phase_names):
             legend_item = ColorLabel(name, self.colors[i])
             # This line controls the legend item text style and size
-            legend_item.setStyleSheet("color: black; font-size: 16px;")  # <-- CHANGE LEGEND SIZE HERE
+            legend_item.setStyleSheet("font-weight: bold; color: black; font-size: 16px;")  # <-- CHANGE LEGEND SIZE HERE
             self.legend_layout.addWidget(legend_item)
         
         # Add plot lines for each phase
@@ -196,8 +198,10 @@ class GraphWidget(FixedWidget):
 
         # Configure the plot widget
         self.plot_widget.setTitle("")  # Clear default title
-        self.plot_widget.setLabel('left', "Current", units='A')  # Y-axis label
-        self.plot_widget.setLabel('bottom', "Time", units='s')   # X-axis label
+        current_axis = self.plot_widget.getAxis("left")
+        current_axis.setLabel("Current", units="A", **{'font-size': '10pt', 'font-weight': 'bold'})
+        time_axis = self.plot_widget.getAxis("bottom")
+        time_axis.setLabel("Time", units="s", **{'font-size': '10pt', 'font-weight': 'bold'})
         self.plot_widget.setYRange(-10, 10)  # Set Y-axis limits for current
         
         # Clear any existing legend items
@@ -215,7 +219,7 @@ class GraphWidget(FixedWidget):
         for i, name in enumerate(phase_names):
             legend_item = ColorLabel(name, self.colors[i])
             # Legend style and size
-            legend_item.setStyleSheet("color: black; font-size: 16px;")  # <-- CHANGE LEGEND SIZE HERE
+            legend_item.setStyleSheet("font-weight: bold; color: black; font-size: 16px;")  # <-- CHANGE LEGEND SIZE HERE
             self.legend_layout.addWidget(legend_item)
         
         # Add plot lines for each phase
@@ -235,8 +239,10 @@ class GraphWidget(FixedWidget):
 
         # Configure the plot widget
         self.plot_widget.setTitle("")  # Clear default title
-        self.plot_widget.setLabel('left', "Power", units='W')    # Y-axis label
-        self.plot_widget.setLabel('bottom', "Time", units='s')   # X-axis label
+        power_axis = self.plot_widget.getAxis("left")
+        power_axis.setLabel("Power", units="W", **{'font-size': '10pt', 'font-weight': 'bold'})
+        time_axis = self.plot_widget.getAxis("bottom")
+        time_axis.setLabel("Time", units="s", **{'font-size': '10pt', 'font-weight': 'bold'})
         self.plot_widget.setYRange(-5000, 3000)  # Set Y-axis limits for power
         
         # Clear any existing legend items
@@ -254,7 +260,7 @@ class GraphWidget(FixedWidget):
         for i, name in enumerate(power_names):
             legend_item = ColorLabel(name, self.colors[i])
             # Legend style and size
-            legend_item.setStyleSheet("color: black; font-size: 16px;")  # <-- CHANGE LEGEND SIZE HERE
+            legend_item.setStyleSheet("font-weight: bold; color: black; font-size: 16px;")  # <-- CHANGE LEGEND SIZE HERE
             self.legend_layout.addWidget(legend_item)
         
         # Add plot lines for each power source

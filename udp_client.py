@@ -74,7 +74,15 @@ class UDPClient:
             'PhotoVoltaic_Power': deque(maxlen=history_length),
             'ElectricVehicle_Power': deque(maxlen=history_length),
             'Battery_Power': deque(maxlen=history_length),
-            'Grid_Power': deque(maxlen=history_length)
+            'Grid_Power': deque(maxlen=history_length),
+
+            # ADD THESE NEW ENTRIES:
+            'Grid_Reactive_Power': deque(maxlen=history_length),
+            'Power_Factor': deque(maxlen=history_length),
+            'Frequency': deque(maxlen=history_length),
+            'THD': deque(maxlen=history_length),
+            'Battery_SoC': deque(maxlen=history_length),
+            'EV_SoC': deque(maxlen=history_length)
         }
         
         # For waveform data (will be generated from single values)
@@ -300,6 +308,14 @@ class UDPClient:
             self.data_history['ElectricVehicle_Power'].append(pev)
             self.data_history['Battery_Power'].append(pbattery)
             self.data_history['Grid_Power'].append(pgrid)
+
+            # ADD THESE NEW HISTORY UPDATES:
+            self.data_history['Grid_Reactive_Power'].append(qgrid)
+            self.data_history['Power_Factor'].append(power_factor)
+            self.data_history['Frequency'].append(frequency)
+            self.data_history['THD'].append(thd)
+            self.data_history['Battery_SoC'].append(soc_battery)
+            self.data_history['EV_SoC'].append(soc_ev)
             
             # Generate three-phase waveforms
             self._generate_waveforms(vd, id_val, timestamp)
@@ -340,7 +356,11 @@ class UDPClient:
         
         # Calculate values for the three current phases
         # Add a small phase shift to simulate typical power factor
-        power_factor_angle = np.arccos(0.95)  # Assume power factor of 0.95 lagging
+        # Get the actual power factor or use 0.95 as fallback
+        actual_pf = self.latest_data.get('Power_Factor', 0.95)
+        # Ensure power factor is in valid range (-1 to 1)
+        actual_pf = max(-1.0, min(1.0, actual_pf))
+        power_factor_angle = np.arccos(actual_pf)  # Assume power factor of 0.95 lagging
         current_a = current_peak * np.sin(angle - power_factor_angle)
         current_b = current_peak * np.sin(angle - self.phase_shift - power_factor_angle)
         current_c = current_peak * np.sin(angle + self.phase_shift - power_factor_angle)
@@ -365,7 +385,7 @@ class UDPClient:
         """
         return self.latest_data.copy()
     
-    def get_waveform_data(self, waveform_type, n_points=8):
+    def get_waveform_data(self, waveform_type, n_points=300):
         """
         Get waveform data for voltage or current.
         
@@ -395,7 +415,7 @@ class UDPClient:
         # Convert to numpy arrays (which is what the UI expects)
         return (np.array(time_data), np.array(phase_a), np.array(phase_b), np.array(phase_c))
     
-    def get_parameter_history(self, parameter, n_points=8):
+    def get_parameter_history(self, parameter, n_points=300):
         """
         Get historical data for a specific parameter.
         
@@ -420,7 +440,7 @@ class UDPClient:
         
         return np.array(time_data), np.array(param_data)
     
-    def get_power_data(self, n_points=8):
+    def get_power_data(self, n_points=300):
         """
         Get power data for grid, PV, EV, and battery.
         
