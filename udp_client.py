@@ -13,8 +13,8 @@ class UDPClient:
     """
     A UDP client that receives and parses data from the EV Charging Station hardware.
     
-    The data format is a CSV string with 9 values:
-    Vd,Id,Vdc,Vev,Vpv,Iev,Ipv,Ppv,Pev,Pbettery,Pg,Qg,PF,Fg,THD,s1,s2,s3,s4,SoC_bettery,SoC_EV
+    The data format is a CSV string with 21 values:
+    Vd,Id,Vdc,Vev,Vpv,Iev,Ipv,Ppv,Pev,Pbattery,Pg,Qg,PF,Fg,THD,s1,s2,s3,s4,SoC_battery,SoC_EV
     """
     
     def __init__(self, ip="0.0.0.0", port=5000, buffer_size=1024, history_length=1000):
@@ -202,7 +202,7 @@ class UDPClient:
         Process received UDP data packet.
         
         The data is expected as a CSV string with values:
-        Vd,Id,Vdc,Vev,Vpv,Iev,Ipv,Ppv,Pev,Pbettery,Pg,Qg,PF,Fg,THD,s1,s2,s3,s4,SoC_bettery,SoC_EV
+        Vd,Id,Vdc,Vev,Vpv,Iev,Ipv,Ppv,Pev,Pbattery,Pg,Qg,PF,Fg,THD,s1,s2,s3,s4,SoC_battery,SoC_EV
         
         Parameters:
         -----------
@@ -331,7 +331,7 @@ class UDPClient:
         current_peak = current_amplitude * np.sqrt(2)  # Convert RMS to peak if needed
         
         # Generate time-based angle for the sine waves
-        angle = 2 * np.pi * self.frequency * timestamp
+        angle = 2 * np.pi * self.latest_data.get('Frequency', self.frequency) * timestamp
         
         # Calculate values for the three voltage phases
         voltage_a = voltage_peak * np.sin(angle)
