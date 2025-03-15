@@ -49,15 +49,27 @@ class DataSimulator:
         self.demand_response = True
         self.v2g = True  # Vehicle-to-Grid enabled
         
+        # Battery parameters - ADD THIS LINE HERE
+        self.battery_soc = 50.0  # Initial battery SoC at 50%
+
         # Grid parameters
         self.vg_rms = 155  # V
         self.ig_rms = 9  # A
         self.thd = 3  # % Total Harmonic Distortion
         self.power_factor = 0.99
         
+        # Grid power parameters as mentioned by mentor
+        self.p_grid = self.vg_rms * self.ig_rms * self.power_factor  # Active power
+        self.q_grid = self.vg_rms * self.ig_rms * np.sin(np.arccos(self.power_factor))  # Reactive power
+        # S_grid = sqrt(P_grid^2 + Q_grid^2) - this is calculated when needed
+        
         # Real-time data settings
         self.use_real_data = use_real_data
         self.udp_client = None
+        
+        # Parameter update tracking
+        self.update_parameter_applied = False
+        self.last_updated_parameters = {}  # Store manually updated parameters
         
         # Initialize UDP client for real-time data if needed
         if self.use_real_data:
@@ -181,9 +193,9 @@ class DataSimulator:
             t = self.get_time_data(n_points)
             
             # Create slightly varying power values around the base values
-            p_pv = self.pv_power + np.random.normal(0, 50, n_points)
-            p_ev = self.ev_power + np.random.normal(0, 100, n_points)
-            p_battery = self.battery_power + np.random.normal(0, 20, n_points)
+            p_pv = np.array([self.pv_power + random.uniform(-50, 50) for _ in range(n_points)])
+            p_ev = np.array([self.ev_power + random.uniform(-100, 100) for _ in range(n_points)])
+            p_battery = np.array([self.battery_power + random.uniform(-20, 20) for _ in range(n_points)])
             
             # Grid power = -(PV + EV + Battery)
             p_grid = -(p_pv + p_ev + p_battery)
@@ -199,57 +211,135 @@ class DataSimulator:
         dict
             Dictionary containing data for all tables.
         """
+        # Create the base table data structure
+        table_data = {
+            "charging_setting": {
+                "PV power": 0,
+                "EV power": 0, 
+                "Battery power": 0,
+                "V_dc": 0
+            },
+            "ev_charging_setting": {
+                "EV voltage": 0, 
+                "EV SoC": 0,
+                "Demand Response": True,
+                "V2G": True
+            },
+            "grid_settings": {
+                "Vg_rms": 0, 
+                "Ig_rms": 0,
+                "Frequency": 0,
+                "THD": 0,
+                "Power factor": 0
+            }
+        }
+        
+        # Get data based on mode (real or simulated)
         if self.use_real_data and self.udp_client and self.udp_client.is_connected():
             # Get latest data from UDP client
             latest_data = self.udp_client.get_latest_data()
             
-            # Map UDP data to table data
-            table_data = {
-                "charging_setting": {
-                    "PV power": latest_data['PhotoVoltaic_Power'],
-                    "EV power": latest_data['ElectricVehicle_Power'],
-                    "Battery power": latest_data['Battery_Power'],
-                    "V_dc": latest_data['DCLink_Voltage']
-                },
-                "ev_charging_setting": {
-                    "EV voltage": latest_data['ElectricVehicle_Voltage'],
-                    "EV SoC": self.ev_soc,  # This might not come from UDP
-                    "Demand Response": self.demand_response,
-                    "V2G": self.v2g
-                },
-                "grid_settings": {
-                    "Vg_rms": latest_data['Grid_Voltage'],
-                    "Ig_rms": latest_data['Grid_Current'],
-                    "Frequency": self.frequency,
-                    "THD": self.thd,
-                    "Power factor": self.power_factor
-                }
-            }
+            # Map UDP data to table data 
+            table_data["charging_setting"]["PV power"] = latest_data.get('PhotoVoltaic_Power', 0)
+            table_data["charging_setting"]["EV power"] = latest_data.get('ElectricVehicle_Power', 0)
+            table_data["charging_setting"]["Battery power"] = latest_data.get('Battery_Power', 0)
+            table_data["charging_setting"]["V_dc"] = latest_data.get('DCLink_Voltage', 0)
             
-            return table_data
+            table_data["ev_charging_setting"]["EV voltage"] = latest_data.get('ElectricVehicle_Voltage', 0)
+            table_data["ev_charging_setting"]["EV SoC"] = latest_data.get('EV_SoC', 0)
+            # These values may not come from UDP, use stored values
+            table_data["ev_charging_setting"]["Demand Response"] = self.demand_response
+            table_data["ev_charging_setting"]["V2G"] = self.v2g
+            
+            # Grid settings come directly from UDP data
+            table_data["grid_settings"]["Vg_rms"] = latest_data.get('Grid_Voltage', 0)
+            table_data["grid_settings"]["Ig_rms"] = latest_data.get('Grid_Current', 0)
+            table_data["grid_settings"]["Frequency"] = latest_data.get('Frequency', 50)
+            table_data["grid_settings"]["THD"] = latest_data.get('THD', 0)
+            table_data["grid_settings"]["Power factor"] = latest_data.get('Power_Factor', 0.95)
         else:
-            # Return simulated data
-            return {
-                "charging_setting": {
-                    "PV power": self.pv_power + random.uniform(-5, 5),
-                    "EV power": self.ev_power + random.uniform(-10, 10),
-                    "Battery power": self.battery_power + random.uniform(-2, 2),
-                    "V_dc": self.v_dc + random.uniform(-0.1, 0.1)
-                },
-                "ev_charging_setting": {
-                    "EV voltage": self.ev_voltage + random.uniform(-0.05, 0.05),
-                    "EV SoC": self.ev_soc + (random.uniform(0, 0.01) if self.ev_soc < 100 else 0),
-                    "Demand Response": self.demand_response,
-                    "V2G": self.v2g
-                },
-                "grid_settings": {
-                    "Vg_rms": self.vg_rms + random.uniform(-0.5, 0.5),
-                    "Ig_rms": self.ig_rms + random.uniform(-0.1, 0.1),
-                    "Frequency": self.frequency + random.uniform(-0.01, 0.01),
-                    "THD": self.thd + random.uniform(-0.05, 0.05),
-                    "Power factor": min(1.0, self.power_factor + random.uniform(-0.005, 0.005))
-                }
-            }
+            # If a parameter was manually updated, use it
+            if self.update_parameter_applied:
+                # For charging settings
+                if "PV power" in self.last_updated_parameters:
+                    table_data["charging_setting"]["PV power"] = self.pv_power
+                else:
+                    table_data["charging_setting"]["PV power"] = self.pv_power + random.uniform(-5, 5)
+                
+                if "EV power" in self.last_updated_parameters:
+                    table_data["charging_setting"]["EV power"] = self.ev_power
+                else:
+                    table_data["charging_setting"]["EV power"] = self.ev_power + random.uniform(-10, 10)
+                
+                if "Battery power" in self.last_updated_parameters:
+                    table_data["charging_setting"]["Battery power"] = self.battery_power
+                else:
+                    table_data["charging_setting"]["Battery power"] = self.battery_power + random.uniform(-2, 2)
+                
+                table_data["charging_setting"]["V_dc"] = self.v_dc + random.uniform(-0.1, 0.1)
+                
+                # For EV charging settings
+                if "EV voltage" in self.last_updated_parameters:
+                    table_data["ev_charging_setting"]["EV voltage"] = self.ev_voltage
+                else:
+                    table_data["ev_charging_setting"]["EV voltage"] = self.ev_voltage + random.uniform(-0.05, 0.05)
+                
+                if "EV SoC" in self.last_updated_parameters:
+                    table_data["ev_charging_setting"]["EV SoC"] = self.ev_soc
+                else:
+                    table_data["ev_charging_setting"]["EV SoC"] = self.ev_soc + (random.uniform(0, 0.01) if self.ev_soc < 100 else 0)
+                
+                table_data["ev_charging_setting"]["Demand Response"] = self.demand_response
+                table_data["ev_charging_setting"]["V2G"] = self.v2g
+                
+                # For grid settings
+                if "Vg_rms" in self.last_updated_parameters:
+                    table_data["grid_settings"]["Vg_rms"] = self.vg_rms
+                else:
+                    table_data["grid_settings"]["Vg_rms"] = self.vg_rms + random.uniform(-0.5, 0.5)
+                
+                if "Ig_rms" in self.last_updated_parameters:
+                    table_data["grid_settings"]["Ig_rms"] = self.ig_rms
+                else:
+                    table_data["grid_settings"]["Ig_rms"] = self.ig_rms + random.uniform(-0.1, 0.1)
+                
+                if "Frequency" in self.last_updated_parameters:
+                    table_data["grid_settings"]["Frequency"] = self.frequency
+                else:
+                    table_data["grid_settings"]["Frequency"] = self.frequency + random.uniform(-0.01, 0.01)
+                
+                if "THD" in self.last_updated_parameters:
+                    table_data["grid_settings"]["THD"] = self.thd
+                else:
+                    table_data["grid_settings"]["THD"] = self.thd + random.uniform(-0.05, 0.05)
+                
+                if "Power factor" in self.last_updated_parameters:
+                    table_data["grid_settings"]["Power factor"] = self.power_factor
+                else:
+                    table_data["grid_settings"]["Power factor"] = min(1.0, self.power_factor + random.uniform(-0.005, 0.005))
+                
+                # Reset the update flag after one use
+                self.update_parameter_applied = False
+                
+            else:
+                # No manual updates, use simulated data with random variations
+                table_data["charging_setting"]["PV power"] = self.pv_power + random.uniform(-5, 5)
+                table_data["charging_setting"]["EV power"] = self.ev_power + random.uniform(-10, 10)
+                table_data["charging_setting"]["Battery power"] = self.battery_power + random.uniform(-2, 2)
+                table_data["charging_setting"]["V_dc"] = self.v_dc + random.uniform(-0.1, 0.1)
+                
+                table_data["ev_charging_setting"]["EV voltage"] = self.ev_voltage + random.uniform(-0.05, 0.05)
+                table_data["ev_charging_setting"]["EV SoC"] = self.ev_soc + (random.uniform(0, 0.01) if self.ev_soc < 100 else 0)
+                table_data["ev_charging_setting"]["Demand Response"] = self.demand_response
+                table_data["ev_charging_setting"]["V2G"] = self.v2g
+                
+                table_data["grid_settings"]["Vg_rms"] = self.vg_rms + random.uniform(-0.5, 0.5)
+                table_data["grid_settings"]["Ig_rms"] = self.ig_rms + random.uniform(-0.1, 0.1)
+                table_data["grid_settings"]["Frequency"] = self.frequency + random.uniform(-0.01, 0.01)
+                table_data["grid_settings"]["THD"] = self.thd + random.uniform(-0.05, 0.05)
+                table_data["grid_settings"]["Power factor"] = min(1.0, self.power_factor + random.uniform(-0.005, 0.005))
+        
+        return table_data
     
     def get_gauge_data(self):
         """
@@ -264,30 +354,27 @@ class DataSimulator:
             # Get latest data from UDP client
             latest_data = self.udp_client.get_latest_data()
             
-            # Calculate apparent power and power factor
-            grid_voltage = latest_data['Grid_Voltage']
-            grid_current = latest_data['Grid_Current']
-            active_power = grid_voltage * grid_current  # Simplified P = V*I
-            
-            # Assume a typical power factor
-            power_factor = 0.95
-            apparent_power = active_power / power_factor
-            reactive_power = np.sqrt(apparent_power**2 - active_power**2)
+            # Using mentor's formula: S_grid = sqrt(P_grid^2 + Q_grid^2)
+            # P_grid and Q_grid are directly provided in the UDP data
+            p_grid = latest_data.get('Grid_Power', 0)  
+            q_grid = latest_data.get('Grid_Reactive_Power', 0)
             
             # Return gauge data based on UDP data
             return {
-                "frequency": self.frequency,  # Typically constant
-                "voltage_rms": grid_voltage,
-                "current_rms": grid_current,
-                "thd": self.thd,
-                "active_power": active_power,
-                "reactive_power": reactive_power
+                "frequency": latest_data.get('Frequency', 50),
+                "voltage_rms": latest_data.get('Grid_Voltage', 0),
+                "current_rms": latest_data.get('Grid_Current', 0),
+                "thd": latest_data.get('THD', 0),
+                "active_power": p_grid,
+                "reactive_power": q_grid
             }
         else:
-            # Return simulated gauge data
+            # Calculate or use stored values for active and reactive power
+            # Using the power triangle relationship and power factor
             active_power = self.vg_rms * self.ig_rms * self.power_factor
             reactive_power = self.vg_rms * self.ig_rms * np.sin(np.arccos(self.power_factor))
             
+            # Return simulated gauge data
             return {
                 "frequency": self.frequency + random.uniform(-0.02, 0.02),
                 "voltage_rms": self.vg_rms + random.uniform(-1, 1),
@@ -315,18 +402,18 @@ class DataSimulator:
                 "s2_status": latest_data.get('S2_Status', 0),
                 "s3_status": latest_data.get('S3_Status', 0),
                 "s4_status": latest_data.get('S4_Status', 0),
-                "ev_soc": latest_data.get('EV_SoC', 0),
-                "battery_soc": latest_data.get('Battery_SoC', 0),
+                "ev_soc": latest_data.get('EV_SoC', self.ev_soc),
+                "battery_soc": latest_data.get('Battery_SoC', self.battery_soc),
             }
         else:
-            # Generate simulated status data
+            # Use consistent SoC values from stored parameters
             return {
                 "s1_status": random.randint(2, 2),
                 "s2_status": random.randint(0, 0),
                 "s3_status": random.randint(0, 0),
                 "s4_status": random.randint(2, 2),
-                "ev_soc": random.uniform(10, 90),
-                "battery_soc": random.uniform(20, 80),
+                "ev_soc": self.ev_soc,  # Use exact same stored value
+                "battery_soc": self.battery_soc  # Use exact same stored value
             }
 
     def update_parameters(self, parameter, value):
@@ -347,6 +434,7 @@ class DataSimulator:
             "battery_power": "battery_power",
             "ev_voltage": "ev_voltage",
             "ev_soc": "ev_soc",
+            "battery_soc": "battery_soc",  # Added this mapping
             "demand_response": "demand_response",
             "v2g": "v2g",
             "vg_rms": "vg_rms",
@@ -366,11 +454,39 @@ class DataSimulator:
             attr_name = parameter_map[parameter]
             if hasattr(self, attr_name):
                 setattr(self, attr_name, value)
+                
+                # Record that this parameter was manually updated
+                self.update_parameter_applied = True
+                self.last_updated_parameters[parameter] = value
+                
+                # Special handling for EV SoC
+                if parameter == "ev_soc":
+                    # Ensure EV SoC stays within valid range
+                    self.ev_soc = min(100.0, max(0.0, value))
+                
+                # Special handling for Battery SoC
+                if parameter == "battery_soc":
+                    # Ensure Battery SoC stays within valid range
+                    self.battery_soc = min(100.0, max(0.0, value))
+                
+                # If we're updating power-related parameters, recalculate grid power
+                if parameter in ["vg_rms", "ig_rms", "power_factor"]:
+                    # Update grid power parameters
+                    self.p_grid = self.vg_rms * self.ig_rms * self.power_factor
+                    self.q_grid = self.vg_rms * self.ig_rms * np.sin(np.arccos(self.power_factor))
+                
                 print(f"Updated {parameter} to {value}")
             else:
                 print(f"Error: Attribute {attr_name} not found")
         else:
             print(f"Error: Unknown parameter {parameter}")
+    
+    def apply_parameter_updates(self):
+        """
+        Force application of parameter updates.
+        This ensures that manually updated parameters are applied immediately.
+        """
+        self.update_parameter_applied = True
     
     def shutdown(self):
         """

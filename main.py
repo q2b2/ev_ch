@@ -294,6 +294,10 @@ class EVChargingMonitor(QMainWindow):
             # Map param_name to simulator attribute name (lowercase with underscores)
             attr_name = param_name.lower().replace(" ", "_")
             self.data_simulator.update_parameters(attr_name, value)
+            
+            # Force refresh of the tables in the next update cycle
+            # This ensures the new values are displayed
+            self.data_simulator.update_parameter_applied = True
     
     def start_logging(self):
         """Start data logging"""

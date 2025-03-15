@@ -509,17 +509,13 @@ class GaugeGridWidget(QFrame):
         
         return gauge
 
-class TableWidget(FixedWidget):
-    """Widget for displaying editable parameter tables with optimized layout and appearance"""
+class TableWidget(FixedWidget):  # Assuming you changed from DraggableWidget to FixedWidget
+    """Widget for displaying editable parameter tables with optimized layout"""
     
     save_clicked = pyqtSignal(str, dict)  # Signal to emit when save button is clicked
     
     def __init__(self, parent=None, title="Parameters", widget_id=None):
         super().__init__(parent, widget_id)
-        
-        # Remove the frame from the main widget to maximize space
-        self.setFrameStyle(QFrame.Box | QFrame.Raised)
-        self.setLineWidth(2)
         
         # Main layout with minimal margins
         layout = QVBoxLayout()
@@ -538,6 +534,10 @@ class TableWidget(FixedWidget):
         self.table.setColumnCount(3)
         self.table.setHorizontalHeaderLabels(["Parameter", "Value", "Input"])
         
+        # Explicitly disable scrollbars 
+        self.table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        
         # Center-align the headers
         self.table.horizontalHeader().setDefaultAlignment(Qt.AlignCenter)
         
@@ -548,8 +548,6 @@ class TableWidget(FixedWidget):
         self.table.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: #E0E0E0; font-weight: bold; }")
         
         # Additional table settings
-        self.table.setVerticalScrollMode(QTableWidget.ScrollPerPixel)
-        self.table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
         self.table.verticalHeader().hide()  # Remove row numbers
         self.table.setShowGrid(True)
         self.table.setAlternatingRowColors(True)
@@ -620,11 +618,13 @@ class TableWidget(FixedWidget):
         # Calculate and set optimal column widths
         table_width = self.width() - 10  # Account for margins
         self.table.setColumnWidth(0, int(table_width * 0.35))  # Parameter column
-        self.table.setColumnWidth(1, int(table_width * 0.25))  # Value column
-        self.table.setColumnWidth(2, int(table_width * 0.40))  # Input column
+        self.table.setColumnWidth(1, int(table_width * 0.30))  # Value column
+        self.table.setColumnWidth(2, int(table_width * 0.35))  # Input column
         
-        # Set uniform row height
-        row_height = 30
+        # Calculate optimal row height to fit all rows without scrollbar
+        available_height = self.height() - self.title_label.height() - self.save_button.height() - 40
+        header_height = self.table.horizontalHeader().height()
+        row_height = (available_height - header_height) / len(parameters)
         
         # Populate table
         for i, param in enumerate(parameters):
@@ -648,24 +648,9 @@ class TableWidget(FixedWidget):
                 input_widget.setAlignment(Qt.AlignCenter)
                 input_widget.setStyleSheet("padding: 2px; margin: 1px; font-size: 15px;")
             
-            # Create a container widget to center the input control
-            container = QWidget()
-            container_layout = QHBoxLayout(container)
-            container_layout.setContentsMargins(2, 1, 2, 1)  # Minimal margins
-            container_layout.addWidget(input_widget)
-            
-            self.table.setCellWidget(i, 2, container)
-            self.table.setRowHeight(i, row_height)
-        
-        # Calculate optimal table height and resize
-        header_height = self.table.horizontalHeader().height()
-        total_row_height = row_height * len(parameters)
-        
-        # Calculate available space for the table
-        available_height = self.height() - self.title_label.height() - self.save_button.height() - 20
-        
-        # Set table height to fit exactly
-        self.table.setFixedHeight(min(total_row_height + header_height, available_height))
+            # Set the row height
+            self.table.setRowHeight(i, int(row_height))
+            self.table.setCellWidget(i, 2, input_widget)
     
     def setup_ev_charging_setting_table(self):
         """Configure table for EV Charging Setting"""
@@ -685,11 +670,13 @@ class TableWidget(FixedWidget):
         # Calculate and set optimal column widths
         table_width = self.width() - 10  # Account for margins
         self.table.setColumnWidth(0, int(table_width * 0.35))  # Parameter column
-        self.table.setColumnWidth(1, int(table_width * 0.25))  # Value column
-        self.table.setColumnWidth(2, int(table_width * 0.40))  # Input column
+        self.table.setColumnWidth(1, int(table_width * 0.30))  # Value column
+        self.table.setColumnWidth(2, int(table_width * 0.35))  # Input column
         
-        # Set uniform row height
-        row_height = 30
+        # Calculate optimal row height to fit all rows without scrollbar
+        available_height = self.height() - self.title_label.height() - self.save_button.height() - 40
+        header_height = self.table.horizontalHeader().height()
+        row_height = (available_height - header_height) / len(parameters)
         
         # Populate table
         for i, param in enumerate(parameters):
@@ -703,23 +690,17 @@ class TableWidget(FixedWidget):
                 value = "On" if param["default"] else "Off"
             else:
                 value = str(param["default"])
-            
+                
             value_item = QTableWidgetItem(value)
             value_item.setTextAlignment(Qt.AlignCenter)
             self.table.setItem(i, 1, value_item)
             
-            # Input field - custom centered widget
+            # Input field - depending on type
             if param["type"] == "number":
                 input_widget = QLineEdit("0")
                 input_widget.setAlignment(Qt.AlignCenter)
                 input_widget.setStyleSheet("padding: 2px; margin: 1px; font-size: 15px;")
-                
-                container = QWidget()
-                container_layout = QHBoxLayout(container)
-                container_layout.setContentsMargins(2, 1, 2, 1)
-                container_layout.addWidget(input_widget)
-                
-                self.table.setCellWidget(i, 2, container)
+                self.table.setCellWidget(i, 2, input_widget)
             elif param["type"] == "radio":
                 radio_widget = QWidget()
                 radio_layout = QHBoxLayout(radio_widget)
@@ -742,7 +723,7 @@ class TableWidget(FixedWidget):
                 else:
                     radio_off.setChecked(True)
                 
-                # Add to group
+                # Add to button group
                 button_group = QButtonGroup(radio_widget)
                 button_group.addButton(radio_on)
                 button_group.addButton(radio_off)
@@ -752,18 +733,9 @@ class TableWidget(FixedWidget):
                 
                 self.table.setCellWidget(i, 2, radio_widget)
             
-            self.table.setRowHeight(i, row_height)
-        
-        # Calculate optimal table height and resize
-        header_height = self.table.horizontalHeader().height()
-        total_row_height = row_height * len(parameters)
-        
-        # Calculate available space for the table
-        available_height = self.height() - self.title_label.height() - self.save_button.height() - 20
-        
-        # Set table height to fit exactly
-        self.table.setFixedHeight(min(total_row_height + header_height, available_height))
-    
+            # Set the row height
+            self.table.setRowHeight(i, int(row_height))
+
     def setup_grid_settings_table(self):
         """Configure table for Grid Settings"""
         self.title_label.setText("Grid Settings")
@@ -783,11 +755,13 @@ class TableWidget(FixedWidget):
         # Calculate and set optimal column widths
         table_width = self.width() - 10  # Account for margins
         self.table.setColumnWidth(0, int(table_width * 0.35))  # Parameter column
-        self.table.setColumnWidth(1, int(table_width * 0.25))  # Value column
-        self.table.setColumnWidth(2, int(table_width * 0.40))  # Input column
+        self.table.setColumnWidth(1, int(table_width * 0.30))  # Value column
+        self.table.setColumnWidth(2, int(table_width * 0.35))  # Input column
         
-        # Set uniform row height
-        row_height = 30
+        # Calculate optimal row height to fit all rows without scrollbar
+        available_height = self.height() - self.title_label.height() - self.save_button.height() - 40
+        header_height = self.table.horizontalHeader().height()
+        row_height = (available_height - header_height) / len(parameters)
         
         # Populate table
         for i, param in enumerate(parameters):
@@ -805,24 +779,10 @@ class TableWidget(FixedWidget):
             input_widget = QLineEdit("0")
             input_widget.setAlignment(Qt.AlignCenter)
             input_widget.setStyleSheet("padding: 2px; margin: 1px; font-size: 15px;")
+            self.table.setCellWidget(i, 2, input_widget)
             
-            container = QWidget()
-            container_layout = QHBoxLayout(container)
-            container_layout.setContentsMargins(2, 1, 2, 1)
-            container_layout.addWidget(input_widget)
-            
-            self.table.setCellWidget(i, 2, container)
-            self.table.setRowHeight(i, row_height)
-        
-        # Calculate optimal table height and resize
-        header_height = self.table.horizontalHeader().height()
-        total_row_height = row_height * len(parameters)
-        
-        # Calculate available space for the table
-        available_height = self.height() - self.title_label.height() - self.save_button.height() - 20
-        
-        # Set table height to fit exactly
-        self.table.setFixedHeight(min(total_row_height + header_height, available_height))
+            # Set the row height
+            self.table.setRowHeight(i, int(row_height))
 
     def update_values(self, data_dict):
         """Update the values column in the table"""
@@ -834,13 +794,15 @@ class TableWidget(FixedWidget):
             if param_name in data_dict:
                 value = data_dict[param_name]
                 if isinstance(value, bool):
-                    value = "On" if value else "Off"
+                    display_value = "On" if value else "Off"
                 elif isinstance(value, (int, float)):
                     # Format numbers to two decimal places
-                    value = f"{value:.2f}"
+                    display_value = f"{value:.2f}"
+                else:
+                    display_value = str(value)
                     
                 # Update with center alignment
-                value_item = QTableWidgetItem(str(value))
+                value_item = QTableWidgetItem(display_value)
                 value_item.setTextAlignment(Qt.AlignCenter)
                 self.table.setItem(row, 1, value_item)
     
@@ -853,23 +815,60 @@ class TableWidget(FixedWidget):
             cell_widget = self.table.cellWidget(row, 2)
             
             if isinstance(cell_widget, QLineEdit):
-                # Handle number input
+                # Direct line edit
                 try:
                     value = float(cell_widget.text())
                     input_values[param_name] = value
                 except ValueError:
                     # Invalid input, ignore
                     pass
-            elif param_name in self.radio_groups:
-                # Handle radio button
+            elif isinstance(cell_widget, QLabel):
+                # Read-only field, ignore
+                pass
+            else:
+                # Custom container widget
+                line_edit = cell_widget.findChild(QLineEdit)
+                if line_edit:
+                    try:
+                        value = float(line_edit.text())
+                        input_values[param_name] = value
+                    except ValueError:
+                        # Invalid input, ignore
+                        pass
+            
+            # Handle radio button groups
+            if param_name in self.radio_groups:
+                # Get button group
                 button_group = self.radio_groups[param_name]
-                if button_group.buttons()[0].isChecked():  # First button is "On"
+                # Check if first button (On) is selected
+                if button_group.buttons()[0].isChecked():
                     input_values[param_name] = True
                 else:
                     input_values[param_name] = False
         
+        # Update values in the table immediately
+        self.update_from_input_values(input_values)
+        
         # Emit signal with table type and values
         self.save_clicked.emit(self.table_type, input_values)
+
+    def update_from_input_values(self, input_values):
+        """Update the value column directly from input values"""
+        for row in range(self.table.rowCount()):
+            param_name = self.table.item(row, 0).text()
+            if param_name in input_values:
+                value = input_values[param_name]
+                if isinstance(value, bool):
+                    display_value = "On" if value else "Off"
+                elif isinstance(value, (int, float)):
+                    display_value = f"{value:.2f}"
+                else:
+                    display_value = str(value)
+                    
+                # Update with center alignment
+                value_item = QTableWidgetItem(display_value)
+                value_item.setTextAlignment(Qt.AlignCenter)
+                self.table.setItem(row, 1, value_item)
 
 class FixedButtonWidget(QFrame):
     """
