@@ -521,10 +521,6 @@ class TableWidget(FixedWidget):
         self.setFrameStyle(QFrame.Box | QFrame.Raised)
         self.setLineWidth(2)
         
-        # Explicitly disable scrollbars - ADD THIS LINE
-        self.table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        
         # Main layout with minimal margins
         layout = QVBoxLayout()
         layout.setContentsMargins(5, 5, 5, 5)  # Minimal margins
