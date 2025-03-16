@@ -385,7 +385,56 @@ class UDPClient:
         """
         return self.latest_data.copy()
     
-    def get_waveform_data(self, waveform_type, n_points=300):
+    # Add this function to your UDPClient class:
+
+    def filter_by_time_window(self, time_data, *data_series, time_window=1.5):
+        """
+        Filter data to only include points within the specified time window from the most recent point.
+        
+        Parameters:
+        -----------
+        time_data : np.array
+            Array of time values
+        *data_series : tuple of np.array
+            Data series to filter based on time_window
+        time_window : float
+            Time window in seconds to include (default: 0.1)
+        
+        Returns:
+        --------
+        tuple
+            Filtered time_data and data_series
+        """
+        if len(time_data) == 0:
+            return (time_data,) + data_series
+        
+        # Get the most recent time point
+        latest_time = time_data[-1]
+        
+        # Calculate the cutoff time
+        cutoff_time = latest_time - time_window
+        
+        # Find indices where time is >= cutoff_time
+        indices = np.where(time_data >= cutoff_time)[0]
+        
+        if len(indices) == 0:
+            # No data in the time window, return the latest point only
+            if len(time_data) > 0:
+                return (np.array([time_data[-1]]),) + tuple(np.array([series[-1]]) for series in data_series)
+            else:
+                return (time_data,) + data_series
+        
+        # Filter the time data and all data series
+        filtered_time = time_data[indices]
+        filtered_series = tuple(series[indices] for series in data_series)
+        # Round time values to 3 decimal places to reduce clutter
+        filtered_time = np.round(filtered_time, 3)
+        
+        return (filtered_time,) + filtered_series
+
+    # Now modify your existing methods to support time window filtering:
+
+    def get_waveform_data(self, waveform_type, n_points=None, time_window=None):
         """
         Get waveform data for voltage or current.
         
@@ -393,29 +442,80 @@ class UDPClient:
         -----------
         waveform_type : str
             The type of waveform to get ('Grid_Voltage' or 'Grid_Current').
-        n_points : int
-            Number of data points to return.
-            
-        Returns:
-        --------
-        tuple
-            A tuple containing (time_data, phase_a_data, phase_b_data, phase_c_data).
+        n_points : int or None
+            Number of data points to return. If None, returns all available history.
+        time_window : float or None
+            Time window in seconds to include. If None, returns all available history.
         """
         if waveform_type not in self.waveform_data:
             return np.array([]), np.array([]), np.array([]), np.array([])
         
-        # Get the most recent n_points from the time history
-        time_data = list(self.time_history)[-n_points:]
+        # Get all history first
+        time_data = np.array(list(self.time_history))
+        phase_a = np.array(list(self.waveform_data[waveform_type]['phaseA']))
+        phase_b = np.array(list(self.waveform_data[waveform_type]['phaseB']))
+        phase_c = np.array(list(self.waveform_data[waveform_type]['phaseC']))
         
-        # Get the most recent n_points for each phase
-        phase_a = list(self.waveform_data[waveform_type]['phaseA'])[-n_points:]
-        phase_b = list(self.waveform_data[waveform_type]['phaseB'])[-n_points:]
-        phase_c = list(self.waveform_data[waveform_type]['phaseC'])[-n_points:]
+        # If empty, return empty arrays
+        if len(time_data) == 0:
+            return np.array([]), np.array([]), np.array([]), np.array([])
         
-        # Convert to numpy arrays (which is what the UI expects)
-        return (np.array(time_data), np.array(phase_a), np.array(phase_b), np.array(phase_c))
-    
-    def get_parameter_history(self, parameter, n_points=300):
+        # Apply time window filter if specified
+        if time_window is not None:
+            time_data, phase_a, phase_b, phase_c = self.filter_by_time_window(
+                time_data, phase_a, phase_b, phase_c, time_window=time_window
+            )
+        # Otherwise apply n_points filter
+        elif n_points is not None:
+            # Get the most recent n_points
+            n = min(n_points, len(time_data))
+            time_data = time_data[-n:]
+            phase_a = phase_a[-n:]
+            phase_b = phase_b[-n:]
+            phase_c = phase_c[-n:]
+        
+        return time_data, phase_a, phase_b, phase_c
+
+    def get_power_data(self, n_points=None, time_window=None):
+        """
+        Get power data for grid, PV, EV, and battery.
+        
+        Parameters:
+        -----------
+        n_points : int or None
+            Number of data points to return. If None, returns all available history.
+        time_window : float or None
+            Time window in seconds to include. If None, returns all available history.
+        """
+        # Get all history first
+        time_data = np.array(list(self.time_history))
+        grid_power = np.array(list(self.data_history['Grid_Power']))
+        pv_power = np.array(list(self.data_history['PhotoVoltaic_Power']))
+        ev_power = np.array(list(self.data_history['ElectricVehicle_Power']))
+        battery_power = np.array(list(self.data_history['Battery_Power']))
+        
+        # If empty, return default values
+        if len(time_data) == 0:
+            return np.array([0]), np.array([0]), np.array([0]), np.array([0]), np.array([0])
+        
+        # Apply time window filter if specified
+        if time_window is not None:
+            time_data, grid_power, pv_power, ev_power, battery_power = self.filter_by_time_window(
+                time_data, grid_power, pv_power, ev_power, battery_power, time_window=time_window
+            )
+        # Otherwise apply n_points filter
+        elif n_points is not None:
+            # Get the most recent n_points
+            n = min(n_points, len(time_data))
+            time_data = time_data[-n:]
+            grid_power = grid_power[-n:]
+            pv_power = pv_power[-n:]
+            ev_power = ev_power[-n:]
+            battery_power = battery_power[-n:]
+        
+        return time_data, grid_power, pv_power, ev_power, battery_power
+
+    def get_parameter_history(self, parameter, n_points=None, time_window=None):
         """
         Get historical data for a specific parameter.
         
@@ -423,64 +523,35 @@ class UDPClient:
         -----------
         parameter : str
             The name of the parameter to get history for.
-        n_points : int
-            Number of historical data points to return.
-            
-        Returns:
-        --------
-        tuple
-            A tuple containing (time_data, parameter_data).
+        n_points : int or None
+            Number of historical data points to return. If None, returns all available history.
+        time_window : float or None
+            Time window in seconds to include. If None, returns all available history.
         """
         if parameter not in self.data_history:
             return np.array([]), np.array([])
         
-        # Get the most recent n_points
-        time_data = list(self.time_history)[-n_points:]
-        param_data = list(self.data_history[parameter])[-n_points:]
+        # Get all history first
+        time_data = np.array(list(self.time_history))
+        param_data = np.array(list(self.data_history[parameter]))
         
-        return np.array(time_data), np.array(param_data)
-    
-    def get_power_data(self, n_points=300):
-        """
-        Get power data for grid, PV, EV, and battery.
+        # If empty, return empty arrays
+        if len(time_data) == 0:
+            return np.array([]), np.array([])
         
-        Parameters:
-        -----------
-        n_points : int
-            Number of data points to return.
-            
-        Returns:
-        --------
-        tuple
-            A tuple containing (time_data, grid_power, pv_power, ev_power, battery_power).
-        """
-        # Get the most recent n_points from time history
-        time_data = list(self.time_history)[-n_points:]
+        # Apply time window filter if specified
+        if time_window is not None:
+            time_data, param_data = self.filter_by_time_window(
+                time_data, param_data, time_window=time_window
+            )
+        # Otherwise apply n_points filter
+        elif n_points is not None:
+            # Get the most recent n_points
+            n = min(n_points, len(time_data))
+            time_data = time_data[-n:]
+            param_data = param_data[-n:]
         
-        # Get power data
-        grid_power = list(self.data_history['Grid_Power'])[-n_points:]
-        pv_power = list(self.data_history['PhotoVoltaic_Power'])[-n_points:]
-        ev_power = list(self.data_history['ElectricVehicle_Power'])[-n_points:]
-        battery_power = list(self.data_history['Battery_Power'])[-n_points:]
-        
-        # Handle empty lists
-        if not time_data:
-            time_data = [0]
-        if not grid_power:
-            grid_power = [0] * len(time_data)
-        if not pv_power:
-            pv_power = [0] * len(time_data)
-        if not ev_power:
-            ev_power = [0] * len(time_data)
-        if not battery_power:
-            battery_power = [0] * len(time_data)
-        
-        # Convert to numpy arrays
-        return (np.array(time_data), 
-                np.array(grid_power), 
-                np.array(pv_power), 
-                np.array(ev_power), 
-                np.array(battery_power))
+        return time_data, param_data
     
     def is_connected(self):
         """

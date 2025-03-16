@@ -100,7 +100,7 @@ class DataSimulator:
         current_time = time.time() - self.time_start
         return np.linspace(current_time - 0.1, current_time, n_points)
     
-    def get_voltage_data(self, n_points=300):
+    def get_voltage_data(self, n_points=None):
         """
         Get three-phase voltage data.
         
@@ -114,12 +114,15 @@ class DataSimulator:
         tuple
             A tuple containing (time_data, va_data, vb_data, vc_data).
         """
-        if self.use_real_data and self.udp_client and self.udp_client.is_connected():
-            # Get real data from UDP client
-            return self.udp_client.get_waveform_data('Grid_Voltage', n_points)
+        if self.use_real_data and self.udp_client:
+            # Pass None to get all available data
+            return self.udp_client.get_waveform_data('Grid_Voltage', n_points=None)
         else:
+            # Default to 300 points for simulation if n_points is None
+            sim_n_points = 300 if n_points is None else n_points
+
             # Generate simulated data
-            t = self.get_time_data(n_points)
+            t = self.get_time_data(sim_n_points)
             phase_shift = (2 * np.pi) / 3  # 120 degrees
             
             # Create sine waves for each phase
@@ -135,7 +138,7 @@ class DataSimulator:
             
             return t, va, vb, vc
     
-    def get_current_data(self, n_points=300):
+    def get_current_data(self, n_points=None):
         """
         Get three-phase current data.
         
@@ -149,12 +152,14 @@ class DataSimulator:
         tuple
             A tuple containing (time_data, ia_data, ib_data, ic_data).
         """
-        if self.use_real_data and self.udp_client and self.udp_client.is_connected():
-            # Get real data from UDP client
-            return self.udp_client.get_waveform_data('Grid_Current', n_points)
+        if self.use_real_data and self.udp_client:
+            # Pass None to get all available data
+            return self.udp_client.get_waveform_data('Grid_Current', n_points=None)
         else:
+            # Default to 300 points for simulation if n_points is None
+            sim_n_points = 300 if n_points is None else n_points
             # Generate simulated data
-            t = self.get_time_data(n_points)
+            t = self.get_time_data(sim_n_points)
             phase_shift = (2 * np.pi) / 3  # 120 degrees
             
             # Create sine waves for each phase with a slight power factor lag
@@ -171,7 +176,7 @@ class DataSimulator:
             
             return t, ia, ib, ic
     
-    def get_power_data(self, n_points=300):
+    def get_power_data(self, n_points=None):
         """
         Get power data for grid, PV, EV, and battery.
         
@@ -185,17 +190,19 @@ class DataSimulator:
         tuple
             A tuple containing (time_data, p_grid, p_pv, p_ev, p_battery).
         """
-        if self.use_real_data and self.udp_client and self.udp_client.is_connected():
-            # Get real data from UDP client
-            return self.udp_client.get_power_data(n_points)
+        if self.use_real_data and self.udp_client:
+            # Pass None to get all available data
+            return self.udp_client.get_power_data(n_points=None)
         else:
+            # Default to 300 points for simulation if n_points is None
+            sim_n_points = 300 if n_points is None else n_points
             # Generate simulated data
-            t = self.get_time_data(n_points)
+            t = self.get_time_data(sim_n_points)
             
             # Create slightly varying power values around the base values
-            p_pv = np.array([self.pv_power + random.uniform(-50, 50) for _ in range(n_points)])
-            p_ev = np.array([self.ev_power + random.uniform(-100, 100) for _ in range(n_points)])
-            p_battery = np.array([self.battery_power + random.uniform(-20, 20) for _ in range(n_points)])
+            p_pv = np.array([self.pv_power + random.uniform(-50, 50) for _ in range(sim_n_points)])
+            p_ev = np.array([self.ev_power + random.uniform(-100, 100) for _ in range(sim_n_points)])
+            p_battery = np.array([self.battery_power + random.uniform(-20, 20) for _ in range(sim_n_points)])
             
             # Grid power = -(PV + EV + Battery)
             p_grid = -(p_pv + p_ev + p_battery)
