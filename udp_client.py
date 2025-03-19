@@ -434,7 +434,7 @@ class UDPClient:
 
     # Now modify your existing methods to support time window filtering:
 
-    def get_waveform_data(self, waveform_type, n_points=None, time_window=None):
+    def get_waveform_data(self, waveform_type, n_points=None, time_window=1.5):
         """
         Get waveform data for voltage or current.
         
@@ -476,7 +476,7 @@ class UDPClient:
         
         return time_data, phase_a, phase_b, phase_c
 
-    def get_power_data(self, n_points=None, time_window=None):
+    def get_power_data(self, n_points=None, time_window=1.5):
         """
         Get power data for grid, PV, EV, and battery.
         
@@ -515,7 +515,7 @@ class UDPClient:
         
         return time_data, grid_power, pv_power, ev_power, battery_power
 
-    def get_parameter_history(self, parameter, n_points=None, time_window=None):
+    def get_parameter_history(self, parameter, n_points=None, time_window=1.5):
         """
         Get historical data for a specific parameter.
         
